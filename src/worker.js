@@ -210,9 +210,11 @@ async function handleAPI(request, url, env) {
       await db.prepare('INSERT INTO users (id, display_name, hostname, invite_code) VALUES (?, ?, ?, ?)')
         .bind(id, name, hostname, inviteCode).run();
 
-      // Create AdGuard client + add allow rules for all optional categories
-      await createAGClient(env, id);
-      await addAllowRules(env, id, OPTIONAL_CATS.filter(c => c !== 'yt_safesearch'));
+	// Create AdGuard client + add allow rules for all optional categories
+    	try {
+        await createAGClient(env, id);
+       	await addAllowRules(env, id, OPTIONAL_CATS.filter(c => c !== 'yt_safesearch'));
+    	} catch (e) { /* AdGuard API indisponible, on continue */ }
 
       // Init category prefs (all unblocked by default)
       for (const cat of OPTIONAL_CATS) {
