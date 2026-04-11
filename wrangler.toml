@@ -5,7 +5,7 @@ compatibility_date = "2024-01-01"
 [[d1_databases]]
 binding = "DB"
 database_name = "filtredns-db"
-database_id = "TO_FILL_AFTER_CREATION"
+database_id = "af9a9e16-30f1-44e9-9a21-02babdf0f272"
 
 # Déploiement :
 # 1. npx wrangler d1 create filtredns-db --location=weur
