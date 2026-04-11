@@ -586,7 +586,7 @@ function profileScreen() {
     ? \`<div class="cd"><div class="inf"><div class="nm">Parrain : \${u.parrain}</div></div><span class="badge badge-g">Associé</span></div>\`
     : \`<div class="cd" style="cursor:pointer" onclick="copyInvite()">
         <div class="inf"><div class="nm">Code d'invitation</div><div class="ds">Envoie ce code à ton parrain</div></div>
-        <span class="host" style="font-size:.8rem">\${u.invite_code}</span>
+        <span class="host" style="font-size:.8rem;cursor:pointer" onclick="navigator.clipboard.writeText('\${u.invite_code}');this.textContent='Copié !';setTimeout(()=>this.textContent='\${u.invite_code}',1500)">\${u.invite_code}</span>
       </div>\`;
 
   return \`<span class="back" onclick="state.user=null;go('home')">← Déconnexion</span>
@@ -707,15 +707,15 @@ function go(screen) { state.screen = screen; render(); }
 async function registerUser() {
   const name = $('regName')?.value?.trim();
   if (!name) return alert('Remplis ton prénom');
-  const res = await fetch(API+'/register', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({name}) });
+const res = await fetch(API+'/register', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({name}) });
   const data = await res.json();
   if (data.error) { alert(data.error + (data.suggestion ? ' → '+data.suggestion : '')); return; }
-  // Load profile
+  // Load profile with retry
+  localStorage.setItem('fdns_id', data.id);
+  await new Promise(r => setTimeout(r, 500));
   const pRes = await fetch(API+'/profile?id='+data.id);
   state.user = await pRes.json();
-  localStorage.setItem('fdns_id', data.id);
-  go('profile');
-}
+  go('profile');}
 
 async function loginUser() {
   const id = $('loginId')?.value?.trim()?.toLowerCase();
@@ -749,15 +749,16 @@ async function confirmAction() {
       body:JSON.stringify({ user_id: state.user.id, category: a.cat }) });
     const data = await res.json();
     if (data.error) { alert(data.error); return; }
-    // Reload profile
+// Reload profile
+    await new Promise(r => setTimeout(r, 300));
     const pRes = await fetch(API+'/profile?id='+state.user.id);
     state.user = await pRes.json();
-    render();
+    go('profile');
   }
 
-  if (a.type === 'parrain_toggle') {
+if (a.type === 'parrain_toggle') {
     const pin = $('confirmPin').value;
-    if (!pin) { alert('Code secret requis'); return; }
+    if (!pin) { alert('Code secret requis'); pendingAction = a; $('confirmModal').classList.add('show'); return; }
     const res = await fetch(API+'/parrain/toggle', { method:'POST', headers:{'Content-Type':'application/json'},
       body:JSON.stringify({ parrain_id: state.parrain.parrain_id, pin, user_id: state.filleulDetail.id, category: a.cat, blocked: a.blocked }) });
     const data = await res.json();
@@ -767,7 +768,7 @@ async function confirmAction() {
 }
 
 function parrainToggle(cat, blocked, el) {
-  el.checked = !blocked; // Reset until confirmed
+  el.checked = !blocked;
   const action = blocked ? 'activer le blocage de' : 'désactiver le blocage de';
   pendingAction = { type: 'parrain_toggle', cat, blocked };
   $('confirmTitle').textContent = 'Confirmation requise';
@@ -870,6 +871,16 @@ if (savedId) {
     if(!d.error){state.user=d;go('profile')}else{localStorage.removeItem('fdns_id');render()}
   }).catch(()=>render());
 } else render();
+document.addEventListener('keydown', function(e) {
+  if (e.key !== 'Enter') return;
+  const id = e.target.id;
+  if (id === 'regName') registerUser();
+  if (id === 'loginId') loginUser();
+  if (id === 'pName' || id === 'pPin') parrainLogin();
+  if (id === 'invCode' || id === 'invName' || id === 'invPin1' || id === 'invPin2') parrainRegister();
+  if (id === 'confirmPin') confirmAction();
+  if (id === 'suggestUrl') suggestSite();
+});
 </script>
 </body>
 </html>`;
