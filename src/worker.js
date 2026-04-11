@@ -32,7 +32,6 @@ const SUGGEST_CATS = [
   { value: 'autre', label: 'Autre (préciser)' }
 ];
 
-// Map category keys to their comment markers in AdGuard rules
 const CAT_MARKERS = {
   manga: '# === Manga / Webtoon / Scantrad ===',
   gambling: "# === Jeux d'argent ===",
@@ -83,7 +82,6 @@ async function agFetch(env, path, method = 'GET', body = null) {
   return res;
 }
 
-// Parse AdGuard custom rules to extract domains per optional category
 async function getOptionalDomains(env) {
   const data = await agFetch(env, '/control/filtering/status');
   const rules = data.user_rules || [];
@@ -91,15 +89,12 @@ async function getOptionalDomains(env) {
   let currentCat = null;
 
   for (const rule of rules) {
-    // Check if line is a category marker
     for (const [key, marker] of Object.entries(CAT_MARKERS)) {
       if (rule.startsWith(marker)) { currentCat = key; cats[key] = []; break; }
     }
-    // If we're in an optional category and line is a rule
     if (currentCat && rule.startsWith('||') && rule.endsWith('^')) {
-      cats[currentCat].push(rule); // e.g., ||domain.com^
+      cats[currentCat].push(rule);
     }
-    // Empty line or new mandatory category resets
     if (rule.startsWith('# === Pornographie') || rule.startsWith('# === Webcams') ||
         rule.startsWith('# === Hentai') || rule.startsWith('# === IA suggestive') ||
         rule.startsWith('# === Tor')) {
@@ -109,17 +104,15 @@ async function getOptionalDomains(env) {
   return cats;
 }
 
-// Add @@ allow rules for a user's optional categories
 async function addAllowRules(env, userId, categories) {
   const domains = await getOptionalDomains(env);
   const data = await agFetch(env, '/control/filtering/status');
   let rules = data.user_rules || [];
 
   for (const cat of categories) {
-    if (cat === 'yt_safesearch') continue; // handled via client API
+    if (cat === 'yt_safesearch') continue;
     const catDomains = domains[cat] || [];
     for (const domain of catDomains) {
-      // ||domain.com^ → @@||domain.com^$client=userId
       const allowRule = `@@${domain}$client=${userId}`;
       if (!rules.includes(allowRule)) rules.push(allowRule);
     }
@@ -128,7 +121,6 @@ async function addAllowRules(env, userId, categories) {
   await agFetch(env, '/control/filtering/set_rules', 'POST', { rules });
 }
 
-// Remove @@ allow rules for a specific category for a user
 async function removeAllowRules(env, userId, category) {
   if (category === 'yt_safesearch') return;
   const domains = await getOptionalDomains(env);
@@ -142,13 +134,11 @@ async function removeAllowRules(env, userId, category) {
   await agFetch(env, '/control/filtering/set_rules', 'POST', { rules });
 }
 
-// Re-add @@ allow rules for a category (parrain unblocking)
 async function reAddAllowRules(env, userId, category) {
   if (category === 'yt_safesearch') return;
   await addAllowRules(env, userId, [category]);
 }
 
-// Create AdGuard client
 async function createAGClient(env, userId) {
   try {
     await agFetch(env, '/control/clients/add', 'POST', {
@@ -159,7 +149,6 @@ async function createAGClient(env, userId) {
   } catch (e) { /* client may already exist */ }
 }
 
-// Toggle YouTube SafeSearch per client
 async function setYTSafeSearch(env, userId, enabled) {
   const data = await agFetch(env, '/control/clients');
   const client = data.clients?.find(c => c.name === userId);
@@ -186,16 +175,14 @@ async function handleAPI(request, url, env) {
   const db = env.DB;
 
   try {
-    // ── FILLEUL : Créer un profil ────────────────────────────
+    // ── FILLEUL : Créer un profil
     if (url.pathname === '/api/register' && request.method === 'POST') {
       const { name } = await request.json();
       const id = name.toLowerCase().replace(/[^a-z0-9]/g, '');
       if (!id || id.length < 2 || id.length > 20) return jsonRes({ error: 'Prénom invalide' }, 400);
 
-      // Check duplicate
       const existing = await db.prepare('SELECT id FROM users WHERE id = ?').bind(id).first();
       if (existing) {
-        // Suggest alternative
         let alt = id + '2';
         let n = 2;
         while (await db.prepare('SELECT id FROM users WHERE id = ?').bind(alt).first()) {
@@ -210,13 +197,11 @@ async function handleAPI(request, url, env) {
       await db.prepare('INSERT INTO users (id, display_name, hostname, invite_code) VALUES (?, ?, ?, ?)')
         .bind(id, name, hostname, inviteCode).run();
 
-	// Create AdGuard client + add allow rules for all optional categories
-    	try {
+      try {
         await createAGClient(env, id);
-       	await addAllowRules(env, id, OPTIONAL_CATS.filter(c => c !== 'yt_safesearch'));
-    	} catch (e) { /* AdGuard API indisponible, on continue */ }
+        await addAllowRules(env, id, OPTIONAL_CATS.filter(c => c !== 'yt_safesearch'));
+      } catch (e) { /* AdGuard API indisponible, on continue */ }
 
-      // Init category prefs (all unblocked by default)
       for (const cat of OPTIONAL_CATS) {
         await db.prepare('INSERT INTO user_categories (user_id, category, blocked, locked_by) VALUES (?, ?, 0, NULL)')
           .bind(id, cat).run();
@@ -225,7 +210,7 @@ async function handleAPI(request, url, env) {
       return jsonRes({ id, hostname, invite_code: inviteCode });
     }
 
-    // ── FILLEUL : Récupérer profil ───────────────────────────
+    // ── FILLEUL : Récupérer profil
     if (url.pathname === '/api/profile' && request.method === 'GET') {
       const id = url.searchParams.get('id');
       if (!id) return jsonRes({ error: 'ID manquant' }, 400);
@@ -250,7 +235,7 @@ async function handleAPI(request, url, env) {
       });
     }
 
-    // ── FILLEUL : Activer une catégorie (sens unique) ────────
+    // ── FILLEUL : Activer une catégorie (sens unique)
     if (url.pathname === '/api/toggle' && request.method === 'POST') {
       const { user_id, category } = await request.json();
       if (!user_id || !OPTIONAL_CATS.includes(category)) return jsonRes({ error: 'Paramètres invalides' }, 400);
@@ -260,11 +245,9 @@ async function handleAPI(request, url, env) {
       if (!current) return jsonRes({ error: 'Catégorie introuvable' }, 404);
       if (current.blocked) return jsonRes({ error: 'Déjà bloquée — seul ton parrain peut la débloquer' }, 403);
 
-      // Block it (one-way)
       await db.prepare('UPDATE user_categories SET blocked = 1, locked_by = ?, updated_at = datetime(?) WHERE user_id = ? AND category = ?')
         .bind('user', new Date().toISOString(), user_id, category).run();
 
-      // Remove allow rules in AdGuard
       if (category === 'yt_safesearch') {
         await setYTSafeSearch(env, user_id, true);
       } else {
@@ -274,31 +257,26 @@ async function handleAPI(request, url, env) {
       return jsonRes({ ok: true });
     }
 
-    // ── FILLEUL : Proposer une URL à bloquer ─────────────────
+    // ── FILLEUL : Proposer une URL à bloquer
     if (url.pathname === '/api/suggest' && request.method === 'POST') {
       const { user_id, url: suggestedUrl, category, category_other } = await request.json();
       if (!user_id || !suggestedUrl) return jsonRes({ error: 'Données manquantes' }, 400);
 
-      // Nettoyer l'URL : extraire le domaine
       let domain = suggestedUrl.trim().toLowerCase();
       domain = domain.replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0].split('?')[0];
       if (!domain || !domain.includes('.')) return jsonRes({ error: 'URL invalide' }, 400);
 
-      // Vérifier que l'utilisateur existe
       const user = await db.prepare('SELECT id FROM users WHERE id = ?').bind(user_id).first();
       if (!user) return jsonRes({ error: 'Profil introuvable' }, 404);
 
-      // Enregistrer la suggestion en base
       await db.prepare('INSERT INTO suggestions (user_id, url, category, category_other) VALUES (?, ?, ?, ?)')
         .bind(user_id, domain, category || 'autre', category_other || null).run();
 
-      // Ajouter directement dans AdGuard Home (pas de validation nécessaire)
       const adguardRule = `||${domain}^`;
       try {
         const data = await agFetch(env, '/control/filtering/status');
         let rules = data.user_rules || [];
         if (!rules.includes(adguardRule)) {
-          // Ajouter avec un commentaire pour traçabilité
           rules.push(`# Ajouté par ${user_id} le ${new Date().toISOString().split('T')[0]}`);
           rules.push(adguardRule);
           await agFetch(env, '/control/filtering/set_rules', 'POST', { rules });
@@ -310,7 +288,7 @@ async function handleAPI(request, url, env) {
       return jsonRes({ ok: true, domain });
     }
 
-    // ── PARRAIN : S'inscrire via code d'invitation ───────────
+    // ── PARRAIN : S'inscrire via code d'invitation
     if (url.pathname === '/api/parrain/register' && request.method === 'POST') {
       const { invite_code, name, pin } = await request.json();
       if (!invite_code || !name || !pin || pin.length < 4) return jsonRes({ error: 'Données manquantes' }, 400);
@@ -330,7 +308,7 @@ async function handleAPI(request, url, env) {
       return jsonRes({ ok: true, parrain_id: parrainId, filleul: user.display_name });
     }
 
-    // ── PARRAIN : Connexion ──────────────────────────────────
+    // ── PARRAIN : Connexion
     if (url.pathname === '/api/parrain/login' && request.method === 'POST') {
       const { name, pin } = await request.json();
       if (!name || !pin) return jsonRes({ error: 'Données manquantes' }, 400);
@@ -347,7 +325,7 @@ async function handleAPI(request, url, env) {
         filleuls: filleuls.results || [] });
     }
 
-    // ── PARRAIN : Voir un filleul ────────────────────────────
+    // ── PARRAIN : Voir un filleul
     if (url.pathname === '/api/parrain/filleul' && request.method === 'GET') {
       const parrainId = url.searchParams.get('parrain_id');
       const userId = url.searchParams.get('user_id');
@@ -358,7 +336,6 @@ async function handleAPI(request, url, env) {
 
       const cats = await db.prepare('SELECT * FROM user_categories WHERE user_id = ?').bind(userId).all();
 
-      // Get stats from AdGuard
       let stats = { blocked: 0, total: 0 };
       try {
         const agStats = await agFetch(env, '/control/stats');
@@ -375,19 +352,17 @@ async function handleAPI(request, url, env) {
       });
     }
 
-    // ── PARRAIN : Toggle catégorie d'un filleul (bidirectionnel) ─
+    // ── PARRAIN : Toggle catégorie d'un filleul (bidirectionnel)
     if (url.pathname === '/api/parrain/toggle' && request.method === 'POST') {
       const { parrain_id, pin, user_id, category, blocked } = await request.json();
       if (!parrain_id || !pin || !user_id || !OPTIONAL_CATS.includes(category))
         return jsonRes({ error: 'Paramètres invalides' }, 400);
 
-      // Verify PIN
       const pinHash = await hashPin(pin);
       const parrain = await db.prepare('SELECT * FROM parrains WHERE id = ? AND pin_hash = ?')
         .bind(parrain_id, pinHash).first();
       if (!parrain) return jsonRes({ error: 'Code incorrect' }, 401);
 
-      // Verify ownership
       const user = await db.prepare('SELECT * FROM users WHERE id = ? AND parrain_id = ?')
         .bind(user_id, parrain_id).first();
       if (!user) return jsonRes({ error: 'Filleul non associé' }, 403);
@@ -406,7 +381,7 @@ async function handleAPI(request, url, env) {
       return jsonRes({ ok: true });
     }
 
-    // ── PARRAIN : Changer son PIN ────────────────────────────
+    // ── PARRAIN : Changer son PIN
     if (url.pathname === '/api/parrain/change-pin' && request.method === 'POST') {
       const { parrain_id, old_pin, new_pin } = await request.json();
       if (!parrain_id || !old_pin || !new_pin || new_pin.length < 4)
@@ -536,8 +511,6 @@ function render() {
   }
 }
 
-// ── Screens ─────────────────────────────────────────────────
-
 function homeScreen() {
   return \`<div class="bx" style="text-align:center">
     <h3 style="font-size:1.05rem;margin-bottom:1rem">Bienvenue</h3>
@@ -584,14 +557,14 @@ function profileScreen() {
 
   const inviteHtml = u.has_parrain
     ? \`<div class="cd"><div class="inf"><div class="nm">Parrain : \${u.parrain}</div></div><span class="badge badge-g">Associé</span></div>\`
-    : \`<div class="cd" style="cursor:pointer" onclick="copyInvite()">
+    : \`<div class="cd">
         <div class="inf"><div class="nm">Code d'invitation</div><div class="ds">Envoie ce code à ton parrain</div></div>
-        <span class="host" style="font-size:.8rem;cursor:pointer" onclick="navigator.clipboard.writeText('\${u.invite_code}');this.textContent='Copié !';setTimeout(()=>this.textContent='\${u.invite_code}',1500)">\${u.invite_code}</span>
+        <span class="host" style="font-size:.8rem;cursor:pointer" onclick="event.stopPropagation();navigator.clipboard.writeText('\${u.invite_code}');this.textContent='Copié !';setTimeout(()=>this.textContent='\${u.invite_code}',1500)">\${u.invite_code}</span>
       </div>\`;
 
-  return \`<span class="back" onclick="state.user=null;go('home')">← Déconnexion</span>
+  return \`<span class="back" onclick="state.user=null;localStorage.removeItem('fdns_id');go('home')">← Déconnexion</span>
   <div style="text-align:center;margin-bottom:1rem">
-    <div class="host" onclick="navigator.clipboard.writeText('\${u.hostname}')" style="cursor:pointer">\${u.hostname}</div>
+    <div class="host" onclick="navigator.clipboard.writeText('\${u.hostname}');this.textContent='Copié !';setTimeout(()=>this.textContent='\${u.hostname}',1500)" style="cursor:pointer">\${u.hostname}</div>
     <div class="hint">Tape dans DNS Privé Android · clique pour copier</div>
   </div>
   \${inviteHtml}
@@ -697,25 +670,22 @@ function parrainDetailScreen() {
   <div style="margin-top:1rem"><div class="st">Catégories optionnelles</div>\${catsHtml}</div>\`;
 }
 
-// ── CAT_LABELS reference for frontend ────────────────────────
 const CAT_LABELS = ${JSON.stringify(CAT_LABELS)};
-
-// ── Actions ──────────────────────────────────────────────────
 
 function go(screen) { state.screen = screen; render(); }
 
 async function registerUser() {
   const name = $('regName')?.value?.trim();
   if (!name) return alert('Remplis ton prénom');
-const res = await fetch(API+'/register', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({name}) });
+  const res = await fetch(API+'/register', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({name}) });
   const data = await res.json();
   if (data.error) { alert(data.error + (data.suggestion ? ' → '+data.suggestion : '')); return; }
-  // Load profile with retry
   localStorage.setItem('fdns_id', data.id);
   await new Promise(r => setTimeout(r, 500));
   const pRes = await fetch(API+'/profile?id='+data.id);
   state.user = await pRes.json();
-  go('profile');}
+  go('profile');
+}
 
 async function loginUser() {
   const id = $('loginId')?.value?.trim()?.toLowerCase();
@@ -729,7 +699,7 @@ async function loginUser() {
 }
 
 function userToggle(cat, el) {
-  el.checked = false; // Reset until confirmed
+  el.checked = false;
   pendingAction = { type: 'user_toggle', cat, el };
   $('confirmTitle').textContent = 'Activer le blocage ?';
   $('confirmMsg').textContent = CAT_LABELS[cat].name + ' sera bloqué. Seul ton parrain pourra le débloquer.';
@@ -739,6 +709,8 @@ function userToggle(cat, el) {
 }
 
 async function confirmAction() {
+  // IMPORTANT: read PIN value BEFORE closing modal (which clears it)
+  const pinValue = $('confirmPin') ? $('confirmPin').value : '';
   closeModal();
   if (!pendingAction) return;
   const a = pendingAction;
@@ -749,18 +721,16 @@ async function confirmAction() {
       body:JSON.stringify({ user_id: state.user.id, category: a.cat }) });
     const data = await res.json();
     if (data.error) { alert(data.error); return; }
-// Reload profile
     await new Promise(r => setTimeout(r, 300));
     const pRes = await fetch(API+'/profile?id='+state.user.id);
     state.user = await pRes.json();
     go('profile');
   }
 
-if (a.type === 'parrain_toggle') {
-    const pin = $('confirmPin').value;
-    if (!pin) { alert('Code secret requis'); pendingAction = a; $('confirmModal').classList.add('show'); return; }
+  if (a.type === 'parrain_toggle') {
+    if (!pinValue) { alert('Code secret requis'); return; }
     const res = await fetch(API+'/parrain/toggle', { method:'POST', headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({ parrain_id: state.parrain.parrain_id, pin, user_id: state.filleulDetail.id, category: a.cat, blocked: a.blocked }) });
+      body:JSON.stringify({ parrain_id: state.parrain.parrain_id, pin: pinValue, user_id: state.filleulDetail.id, category: a.cat, blocked: a.blocked }) });
     const data = await res.json();
     if (data.error) { alert(data.error); return; }
     await viewFilleul(state.filleulDetail.id);
@@ -780,7 +750,7 @@ function parrainToggle(cat, blocked, el) {
   setTimeout(() => $('confirmPin').focus(), 100);
 }
 
-function closeModal() { $('confirmModal').classList.remove('show'); $('confirmPin').value = ''; }
+function closeModal() { $('confirmModal').classList.remove('show'); }
 
 async function suggestSite() {
   const urlInput = $('suggestUrl');
@@ -804,7 +774,6 @@ async function suggestSite() {
   if (otherInput) { otherInput.value = ''; otherInput.style.display = 'none'; }
 }
 
-// Show/hide "Autre" text field based on category selection
 document.addEventListener('change', function(e) {
   if (e.target.id === 'suggestCat') {
     const otherInput = $('suggestOther');
@@ -835,7 +804,6 @@ async function parrainRegister() {
   const data = await res.json();
   if (data.error) { alert(data.error); return; }
   alert('Tu es maintenant parrain de ' + data.filleul + ' !');
-  // Auto-login
   const lRes = await fetch(API+'/parrain/login', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({name,pin:pin1}) });
   state.parrain = await lRes.json();
   go('parrain_dashboard');
@@ -864,13 +832,13 @@ function copyInvite() {
   if (state.user?.invite_code) navigator.clipboard.writeText(state.user.invite_code);
 }
 
-// Auto-login if saved
 const savedId = localStorage.getItem('fdns_id');
 if (savedId) {
   fetch(API+'/profile?id='+savedId).then(r=>r.json()).then(d=>{
     if(!d.error){state.user=d;go('profile')}else{localStorage.removeItem('fdns_id');render()}
   }).catch(()=>render());
 } else render();
+
 document.addEventListener('keydown', function(e) {
   if (e.key !== 'Enter') return;
   const id = e.target.id;
