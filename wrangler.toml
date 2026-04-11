@@ -1,0 +1,17 @@
+name = "filtredns"
+main = "src/worker.js"
+compatibility_date = "2024-01-01"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "filtredns-db"
+database_id = "TO_FILL_AFTER_CREATION"
+
+# Déploiement :
+# 1. npx wrangler d1 create filtredns-db --location=weur
+# 2. Copier le database_id dans ce fichier
+# 3. npx wrangler d1 execute filtredns-db --file=schema.sql
+# 4. npx wrangler secret put ADGUARD_URL     → http://89.168.40.235:3000
+# 5. npx wrangler secret put ADGUARD_USER    → ton login admin
+# 6. npx wrangler secret put ADGUARD_PASS    → ton mot de passe admin
+# 7. npx wrangler deploy
