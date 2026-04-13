@@ -408,9 +408,6 @@ async function handleAPI(request, url, env) {
       if (!user) return jsonRes({ error: 'Filleul introuvable ou non associé' }, 404);
 
       const cats = await db.prepare('SELECT * FROM user_categories WHERE user_id = ?').bind(userId).all();
-      const exceps = await db.prepare('SELECT category, approved, COUNT(*) as count FROM user_exceptions WHERE user_id = ? GROUP BY category, approved').bind(userId).all();
-      const excCounts = {}; const pendCounts = {};
-      for (const e of (exceps.results || [])) { if (e.approved === 1) excCounts[e.category] = (excCounts[e.category]||0) + e.count; else if (e.approved === 0) pendCounts[e.category] = (pendCounts[e.category]||0) + e.count; }
 
       let stats = { blocked: 0, total: 0 };
       try {
@@ -419,10 +416,16 @@ async function handleAPI(request, url, env) {
         stats.total = agStats.num_dns_queries || 0;
       } catch (e) {}
 
+      const exceps = await db.prepare('SELECT category, domain, approved FROM user_exceptions WHERE user_id = ?').bind(userId).all();
+      const excCounts = {}; const pendCounts = {}; const excNames = {};
+      for (const e of (exceps.results || [])) {
+        if (e.approved === 1) { excCounts[e.category] = (excCounts[e.category]||0) + 1; if (!excNames[e.category]) excNames[e.category] = []; excNames[e.category].push(e.domain); }
+        else if (e.approved === 0) { pendCounts[e.category] = (pendCounts[e.category]||0) + 1; }
+      }
       return jsonRes({
         id: user.id, name: user.display_name, hostname: user.hostname,
         categories: Object.fromEntries((cats.results || []).map(c => [c.category, {
-          ...CAT_LABELS[c.category], blocked: !!c.blocked, locked_by: c.locked_by, exceptions: excCounts[c.category]||0, pending: pendCounts[c.category]||0
+          ...CAT_LABELS[c.category], blocked: !!c.blocked, locked_by: c.locked_by, exceptions: excCounts[c.category]||0, pending: pendCounts[c.category]||0, exception_domains: excNames[c.category]||[]
         }])),
         mandatory: MANDATORY_CATS, stats
       });
@@ -830,9 +833,10 @@ function parrainDetailScreen() {
   for (const [key, cat] of Object.entries(f.categories || {})) {
     const info = cat.blocked ? (cat.locked_by === 'user' ? 'Activé par le filleul' : 'Activé par toi') : 'Non activé';
     const excDetail = (cat.exceptions > 0 ? ' \u00b7 ' + cat.exceptions + ' exception(s)' : '') + (cat.pending > 0 ? ' \u00b7 ' + cat.pending + ' en attente' : '');
+    const excDomainList = (cat.exception_domains||[]).length > 0 ? '<div style="font-size:.68rem;color:var(--g);margin-top:3px">' + cat.exception_domains.join(', ') + '</div>' : '';
     catsHtml += \`<div class="cd">
       <div class="i">\${CAT_LABELS[key]?.icon||''}</div>
-      <div class="inf"><div class="nm">\${cat.name}</div><div class="ds">\${info}\${excDetail}</div></div>
+      <div class="inf"><div class="nm">\${cat.name}</div><div class="ds">\${info}\${excDetail}</div>\${excDomainList}</div>
       <label class="tg"><input type="checkbox" \${cat.blocked?'checked':''}
         onchange="parrainToggle('\${key}',this.checked,this)" /><span class="tg-s"></span></label>
     </div>\`;
@@ -1069,7 +1073,7 @@ async function loadPending(){
     const el=document.getElementById('pendingSection');
     if(!el)return;
     if(!data.pending||data.pending.length===0){el.innerHTML='';return;}
-    el.innerHTML='<div class="st">Demandes en attente</div>'+data.pending.map(p=>'<div class="cd" style="flex-wrap:wrap"><div class="inf"><div class="nm">'+p.user_name+' demande : '+p.domain+'</div><div class="ds">Cat\u00e9gorie : '+(p.category||'?')+'</div></div><div style="display:flex;gap:6px"><button class="btn" style="width:auto;padding:6px 14px;font-size:.78rem" onclick="approvePending(\\''+p.user_id+'\\',\\''+p.category+'\\',\\''+p.domain+'\\',true)">Approuver</button><button class="btn btn-r" style="width:auto;padding:6px 14px;font-size:.78rem" onclick="approvePending(\\''+p.user_id+'\\',\\''+p.category+'\\',\\''+p.domain+'\\',false)">Refuser</button></div></div>').join('');
+    el.innerHTML='<div class="st">Demandes en attente</div><div class="hint" style="text-align:left;margin-bottom:6px">Les domaines li\u00e9s (ex: apis.naver.com pour Webtoon) sont automatiquement inclus.</div>'+data.pending.map(p=>'<div class="cd" style="flex-wrap:wrap"><div class="inf"><div class="nm">'+p.user_name+' : '+p.domain+'</div><div class="ds">'+(p.category||'?')+'</div></div><div style="display:flex;gap:6px"><button class="btn" style="width:auto;padding:6px 14px;font-size:.78rem" onclick="approvePending(\\''+p.user_id+'\\',\\''+p.category+'\\',\\''+p.domain+'\\',true)">Approuver</button><button class="btn btn-r" style="width:auto;padding:6px 14px;font-size:.78rem" onclick="approvePending(\\''+p.user_id+'\\',\\''+p.category+'\\',\\''+p.domain+'\\',false)">Refuser</button></div></div>').join('');
   }catch(e){}
 }
 
