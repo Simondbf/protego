@@ -247,10 +247,14 @@ async function handleAPI(request, url, env) {
         : null;
 
       const exceptions = await db.prepare('SELECT category, approved, COUNT(*) as count FROM user_exceptions WHERE user_id = ? GROUP BY category, approved').bind(id).all();
-      const exceptionCounts = {}; const pendingCounts = {};
-      for (const e of (exceptions.results || [])) { if (e.approved === 1) exceptionCounts[e.category] = (exceptionCounts[e.category] || 0) + e.count; else if (e.approved === 0) pendingCounts[e.category] = (pendingCounts[e.category] || 0) + e.count; }
+      const exceptionCounts = {};
+      const pendingCounts = {};
+      for (const e of (exceptions.results || [])) {
+        if (e.approved === 1) exceptionCounts[e.category] = (exceptionCounts[e.category] || 0) + e.count;
+        else pendingCounts[e.category] = (pendingCounts[e.category] || 0) + e.count;
+      }
       return jsonRes({
-        id: user.id, name: user.display_name, hostname: user.hostname, parrain_id: user.parrain_id || null, parrain_id: user.parrain_id || null,
+        id: user.id, name: user.display_name, hostname: user.hostname, parrain_id: user.parrain_id || null,
         invite_code: user.parrain_id ? null : user.invite_code,
         parrain: parrain?.display_name || null,
         has_parrain: !!user.parrain_id,
@@ -290,40 +294,34 @@ async function handleAPI(request, url, env) {
       if (!userId || !category) return jsonRes({ error: 'Param\u00e8tres manquants' }, 400);
       const domains = await getOptionalDomains(env);
       const catDomains = (domains[category] || []).map(d => d.replace('||', '').replace('^', ''));
-      const userExceptions = await db.prepare('SELECT domain, approved FROM user_exceptions WHERE user_id = ? AND category = ?').bind(userId, category).all();
-      const approvedDomains = new Set((userExceptions.results || []).filter(e => e.approved === 1).map(e => e.domain));
-      const pendingDomains = new Set((userExceptions.results || []).filter(e => e.approved === 0).map(e => e.domain));
+      const userExceptions = await db.prepare('SELECT domain FROM user_exceptions WHERE user_id = ? AND category = ?').bind(userId, category).all();
+      const exceptedDomains = new Set((userExceptions.results || []).map(e => e.domain));
+      const pendingExcs = await db.prepare('SELECT domain, approved FROM user_exceptions WHERE user_id = ? AND category = ?').bind(userId, category).all();
+      const approvedDomains = new Set((pendingExcs.results || []).filter(e => e.approved === 1).map(e => e.domain));
+      const pendingDomains = new Set((pendingExcs.results || []).filter(e => e.approved === 0).map(e => e.domain));
       return jsonRes({ category, domains: catDomains.map(d => ({ domain: d, excepted: approvedDomains.has(d), pending: pendingDomains.has(d) })) });
     }
 
     // ── FILLEUL : Ajouter/retirer une exception individuelle
     if (url.pathname === '/api/exception' && request.method === 'POST') {
       const { user_id, category, domain, excepted } = await request.json();
-      if (!user_id || !category || !domain) return jsonRes({ error: 'Params manquants' }, 400);
+      if (!user_id || !category || !domain) return jsonRes({ error: 'Param\u00e8tres manquants' }, 400);
       const cat = await db.prepare('SELECT * FROM user_categories WHERE user_id = ? AND category = ?').bind(user_id, category).first();
-      if (!cat || !cat.blocked) return jsonRes({ error: 'Categorie non bloquee' }, 400);
+      if (!cat || !cat.blocked) return jsonRes({ error: 'Cette cat\u00e9gorie n\'est pas bloqu\u00e9e' }, 400);
       if (excepted) {
         const deps = DOMAIN_DEPENDENCIES[domain] || [];
         const allDomains = [domain, ...deps];
-        let autoApproved = false;
         for (const d of allDomains) {
-          const existing = await db.prepare('SELECT approved FROM user_exceptions WHERE user_id = ? AND category = ? AND domain = ?').bind(user_id, category, d).first();
-          if (existing && existing.approved === -1) {
-            await db.prepare('UPDATE user_exceptions SET approved = 1 WHERE user_id = ? AND category = ? AND domain = ?').bind(user_id, category, d).run();
-            try { await addSingleException(env, user_id, d); } catch (e) {}
-            autoApproved = true;
-          } else if (!existing) {
-            await db.prepare('INSERT INTO user_exceptions (user_id, category, domain, approved) VALUES (?, ?, ?, 0)').bind(user_id, category, d).run();
-          }
+          await db.prepare('INSERT OR IGNORE INTO user_exceptions (user_id, category, domain, approved) VALUES (?, ?, ?, 0)').bind(user_id, category, d).run();
         }
-        if (autoApproved) return jsonRes({ ok: true });
-        return jsonRes({ ok: true, pending: true });
+        return jsonRes({ ok: true, pending: true, message: 'Demande envoy\u00e9e. Ton parrain doit approuver.' });
       } else {
         const deps = DOMAIN_DEPENDENCIES[domain] || [];
         const allDomains = [domain, ...deps];
         for (const d of allDomains) {
           const exc = await db.prepare('SELECT approved FROM user_exceptions WHERE user_id = ? AND category = ? AND domain = ?').bind(user_id, category, d).first();
-          if (exc && exc.approved === 0) {
+          if (exc) {
+            if (exc.approved === 1) { try { await removeSingleException(env, user_id, d); } catch (e) {} }
             await db.prepare('DELETE FROM user_exceptions WHERE user_id = ? AND category = ? AND domain = ?').bind(user_id, category, d).run();
           }
         }
@@ -331,6 +329,7 @@ async function handleAPI(request, url, env) {
       }
     }
 
+    // ── FILLEUL : Proposer une URL à bloquer
     if (url.pathname === '/api/suggest' && request.method === 'POST') {
       const { user_id, url: suggestedUrl, category, category_other } = await request.json();
       if (!user_id || !suggestedUrl) return jsonRes({ error: 'Données manquantes' }, 400);
@@ -409,6 +408,9 @@ async function handleAPI(request, url, env) {
       if (!user) return jsonRes({ error: 'Filleul introuvable ou non associé' }, 404);
 
       const cats = await db.prepare('SELECT * FROM user_categories WHERE user_id = ?').bind(userId).all();
+      const exceps = await db.prepare('SELECT category, approved, COUNT(*) as count FROM user_exceptions WHERE user_id = ? GROUP BY category, approved').bind(userId).all();
+      const excCounts = {}; const pendCounts = {};
+      for (const e of (exceps.results || [])) { if (e.approved === 1) excCounts[e.category] = (excCounts[e.category]||0) + e.count; else if (e.approved === 0) pendCounts[e.category] = (pendCounts[e.category]||0) + e.count; }
 
       let stats = { blocked: 0, total: 0 };
       try {
@@ -420,7 +422,7 @@ async function handleAPI(request, url, env) {
       return jsonRes({
         id: user.id, name: user.display_name, hostname: user.hostname,
         categories: Object.fromEntries((cats.results || []).map(c => [c.category, {
-          ...CAT_LABELS[c.category], blocked: !!c.blocked, locked_by: c.locked_by
+          ...CAT_LABELS[c.category], blocked: !!c.blocked, locked_by: c.locked_by, exceptions: excCounts[c.category]||0, pending: pendCounts[c.category]||0
         }])),
         mandatory: MANDATORY_CATS, stats
       });
@@ -487,7 +489,7 @@ async function handleAPI(request, url, env) {
       const allDomains = [domain, ...deps];
       if (excepted) {
         for (const d of allDomains) {
-          await db.prepare('INSERT OR IGNORE INTO user_exceptions (user_id, category, domain) VALUES (?, ?, ?)').bind(user_id, category, d).run();
+          await db.prepare('INSERT OR REPLACE INTO user_exceptions (user_id, category, domain, approved) VALUES (?, ?, ?, 1)').bind(user_id, category, d).run();
           try { await addSingleException(env, user_id, d); } catch (e) {}
         }
       } else {
@@ -496,34 +498,52 @@ async function handleAPI(request, url, env) {
           try { await removeSingleException(env, user_id, d); } catch (e) {}
         }
       }
-      return jsonRes({ ok: true, dependencies: deps.length > 0 ? deps : undefined });
+      return jsonRes({ ok: true });
     }
 
+    // \u2500\u2500 PARRAIN : Approuver ou refuser une exception en attente
     if (url.pathname === '/api/parrain/approve' && request.method === 'POST') {
       const { parrain_id, pin, user_id, category, domain, approved } = await request.json();
-      if (!parrain_id || !pin || !user_id || !domain) return jsonRes({ error: 'Params manquants' }, 400);
+      if (!parrain_id || !pin || !user_id || !domain) return jsonRes({ error: 'Param\u00e8tres manquants' }, 400);
       const pinHash = await hashPin(pin);
       const parrain = await db.prepare('SELECT * FROM parrains WHERE id = ? AND pin_hash = ?').bind(parrain_id, pinHash).first();
       if (!parrain) return jsonRes({ error: 'Code PIN incorrect' }, 401);
       const user = await db.prepare('SELECT * FROM users WHERE id = ? AND parrain_id = ?').bind(user_id, parrain_id).first();
-      if (!user) return jsonRes({ error: 'Filleul non associe' }, 403);
+      if (!user) return jsonRes({ error: 'Filleul non associ\u00e9' }, 403);
       const deps = DOMAIN_DEPENDENCIES[domain] || [];
       const allDomains = [domain, ...deps];
       if (approved) {
-        for (const d of allDomains) { await db.prepare('UPDATE user_exceptions SET approved = 1 WHERE user_id = ? AND domain = ?').bind(user_id, d).run(); try { await addSingleException(env, user_id, d); } catch (e) {} }
+        for (const d of allDomains) {
+          await db.prepare('UPDATE user_exceptions SET approved = 1 WHERE user_id = ? AND category = ? AND domain = ?').bind(user_id, category || '', d).run();
+          try { await addSingleException(env, user_id, d); } catch (e) {}
+        }
       } else {
-        for (const d of allDomains) { const exc = await db.prepare('SELECT approved FROM user_exceptions WHERE user_id = ? AND domain = ?').bind(user_id, d).first(); if (exc && exc.approved === 1) { await db.prepare('UPDATE user_exceptions SET approved = -1 WHERE user_id = ? AND domain = ?').bind(user_id, d).run(); try { await removeSingleException(env, user_id, d); } catch (e) {} } else { await db.prepare('DELETE FROM user_exceptions WHERE user_id = ? AND domain = ?').bind(user_id, d).run(); } }
+        for (const d of allDomains) {
+          const exc = await db.prepare('SELECT approved FROM user_exceptions WHERE user_id = ? AND domain = ?').bind(user_id, d).first();
+          if (exc && exc.approved === 1) { try { await removeSingleException(env, user_id, d); } catch (e) {} }
+          await db.prepare('DELETE FROM user_exceptions WHERE user_id = ? AND domain = ?').bind(user_id, d).run();
+        }
       }
       return jsonRes({ ok: true });
     }
+
+    // \u2500\u2500 PARRAIN : Lister les demandes en attente
     if (url.pathname === '/api/parrain/pending' && request.method === 'GET') {
       const parrainId = url.searchParams.get('parrain_id');
       if (!parrainId) return jsonRes({ error: 'ID manquant' }, 400);
       const filleuls = await db.prepare('SELECT id FROM users WHERE parrain_id = ?').bind(parrainId).all();
+      const userIds = (filleuls.results || []).map(f => f.id);
       let pending = [];
-      for (const f of (filleuls.results || [])) { const excs = await db.prepare('SELECT * FROM user_exceptions WHERE user_id = ? AND approved = 0').bind(f.id).all(); const un = await db.prepare('SELECT display_name FROM users WHERE id = ?').bind(f.id).first(); for (const exc of (excs.results || [])) { pending.push({ user_id: f.id, user_name: un?.display_name || f.id, category: exc.category, domain: exc.domain }); } }
+      for (const uid of userIds) {
+        const excs = await db.prepare('SELECT * FROM user_exceptions WHERE user_id = ? AND approved = 0').bind(uid).all();
+        const userName = await db.prepare('SELECT display_name FROM users WHERE id = ?').bind(uid).first();
+        for (const exc of (excs.results || [])) {
+          pending.push({ user_id: uid, user_name: userName?.display_name || uid, category: exc.category, domain: exc.domain, created_at: exc.created_at });
+        }
+      }
       return jsonRes({ pending });
     }
+
     if (url.pathname === '/api/parrain/revoke-filleul' && request.method === 'POST') {
       const { parrain_id, pin, user_id } = await request.json();
       if (!parrain_id || !pin || !user_id) return jsonRes({ error: 'Params manquants' }, 400);
@@ -536,6 +556,7 @@ async function handleAPI(request, url, env) {
       await db.prepare('UPDATE users SET parrain_id = NULL, invite_code = ? WHERE id = ?').bind(newInvite, user_id).run();
       return jsonRes({ ok: true });
     }
+
     return jsonRes({ error: 'Route inconnue' }, 404);
   } catch (err) {
     return jsonRes({ error: err.message }, 500);
@@ -708,7 +729,7 @@ function profileScreen() {
     const excLink = (cat.blocked && key !== 'yt_safesearch') ? '<span class="exc-link" onclick="openExceptions(\\'' + key + '\\')">G\u00e9rer les exceptions</span>' : '';
     catsHtml += \`<div class="cd" style="flex-wrap:wrap">
       <div class="i">\${CAT_LABELS[key]?.icon||''}</div>
-      <div class="inf"><div class="nm">\${cat.name}</div><div class="ds">\${lockInfo}\${excInfo}</div>\${excLink}</div>
+      <div class="inf"><div class="nm">\${cat.name}</div><div class="ds">\${lockInfo}\${excInfo}\${pendInfo}</div>\${excLink}</div>
       <label class="tg"><input type="checkbox" \${cat.blocked?'checked':''} \${locked?'disabled':''}
         onchange="userToggle('\${key}',this)" /><span class="tg-s"></span></label>
     </div>\`;
@@ -797,7 +818,7 @@ function parrainDashScreen() {
     <div class="inf"><div class="nm">\${f.display_name}</div><div class="ds">\${f.hostname}</div></div>
     <span style="color:var(--tx2);font-size:.85rem">→</span>
   </div>\`).join('')||'<div class="hint">Aucun filleul associé pour l\\'instant</div>'}
-  <button class="btn btn2" onclick="go(\'parrain_invite\')" style="margin-top:8px">Ajouter un filleul</button>
+  <button class="btn btn2" onclick="go('parrain_invite')" style="margin-top:8px">Ajouter un filleul</button>
   <button class="btn btn2" onclick="changePin()" style="margin-top:8px">Changer mon code secret</button>
   <div id="pendingSection" style="margin-top:1rem"></div>\`;
 }
@@ -808,9 +829,10 @@ function parrainDetailScreen() {
   let catsHtml = '';
   for (const [key, cat] of Object.entries(f.categories || {})) {
     const info = cat.blocked ? (cat.locked_by === 'user' ? 'Activé par le filleul' : 'Activé par toi') : 'Non activé';
+    const excDetail = (cat.exceptions > 0 ? ' \u00b7 ' + cat.exceptions + ' exception(s)' : '') + (cat.pending > 0 ? ' \u00b7 ' + cat.pending + ' en attente' : '');
     catsHtml += \`<div class="cd">
       <div class="i">\${CAT_LABELS[key]?.icon||''}</div>
-      <div class="inf"><div class="nm">\${cat.name}</div><div class="ds">\${info}</div></div>
+      <div class="inf"><div class="nm">\${cat.name}</div><div class="ds">\${info}\${excDetail}</div></div>
       <label class="tg"><input type="checkbox" \${cat.blocked?'checked':''}
         onchange="parrainToggle('\${key}',this.checked,this)" /><span class="tg-s"></span></label>
     </div>\`;
@@ -828,8 +850,8 @@ function parrainDetailScreen() {
   </div>
   <div class="st">Catégories obligatoires</div>
   \${f.mandatory.map(m=>\`<div class="cd"><div class="i">\${m.icon}</div><div class="inf"><div class="nm">\${m.name}</div></div><span class="badge badge-r">Obligatoire</span></div>\`).join('')}
-  <div style="margin-top:1rem"><div class="st">Catégories optionnelles</div>\${catsHtml}</div>\`;
-  <button class="btn btn2" onclick="revokeFilleul('${f.id}','${f.name}')" style="margin-top:1rem;color:var(--r)">Se retirer comme parrain</button>`;
+  <div style="margin-top:1rem"><div class="st">Catégories optionnelles</div>\${catsHtml}</div>
+  <button class="btn btn2" onclick="revokeFilleul('\${f.id}','\${f.name}')" style="margin-top:1rem;color:var(--r)">Se retirer comme parrain</button>\`;
 }
 
 const CAT_LABELS = ${JSON.stringify(CAT_LABELS)};
@@ -1013,8 +1035,8 @@ function renderExcDomains(){
   list.innerHTML=filtered.map(d=>{
     var cls=d.excepted?'excepted':(d.pending?'pending':'');
     var status=d.pending?' (en attente)':'';
-    var dis=d.pending?' disabled':'';
-    return '<div class="exc-item"><span class="domain '+cls+'">'+d.domain+status+'</span><label class="tg"><input type="checkbox" '+(d.excepted?'checked':'')+(d.pending?' checked disabled':'')+dis+' onchange="toggleException(\\''+d.domain+'\\',this.checked)" /><span class="tg-s"></span></label></div>';
+    var disabled=d.pending?' disabled':'';
+    return '<div class="exc-item"><span class="domain '+cls+'">'+d.domain+status+'</span><label class="tg"><input type="checkbox" '+(d.excepted?'checked':'')+(d.pending?' checked disabled':'')+disabled+' onchange="toggleException(\\''+d.domain+'\\',this.checked)" /><span class="tg-s"></span></label></div>';
   }).join('');
 }
 function filterExcDomains(){renderExcDomains()}
@@ -1026,13 +1048,13 @@ async function toggleException(domain,excepted){
     if(data.error){hideLoader();alert(data.error);return;}
     if(data.pending){
       const d=excDomains.find(x=>x.domain===domain);if(d){d.pending=true;d.excepted=false;}
-      const deps=DOMAIN_DEPENDENCIES[domain]||[];
-      for(var dep of deps){const dd=excDomains.find(x=>x.domain===dep);if(dd){dd.pending=true;dd.excepted=false;}}
+      const deps=(data.dependencies||[]);
+      for(const dep of deps){const dd=excDomains.find(x=>x.domain===dep);if(dd){dd.pending=true;dd.excepted=false;}}
       renderExcDomains();hideLoader();
-      alert('Demande envoy\u00e9e \u00e0 ton parrain.');return;
+      alert('Demande envoy\u00e9e \u00e0 ton parrain. L\u2019exception sera active apr\u00e8s approbation.');
+      return;
     }
-    const d=excDomains.find(x=>x.domain===domain);
-    if(d){if(excepted){d.excepted=true;d.pending=false;}else{d.excepted=false;d.pending=false;}}
+    const d=excDomains.find(x=>x.domain===domain);if(d){d.excepted=false;d.pending=false;}
     renderExcDomains();
     const prRes=await fetch(API+'/profile?id='+state.user.id);state.user=await prRes.json();hideLoader();
   }catch(e){hideLoader();alert('Erreur : '+e.message);}
@@ -1047,7 +1069,7 @@ async function loadPending(){
     const el=document.getElementById('pendingSection');
     if(!el)return;
     if(!data.pending||data.pending.length===0){el.innerHTML='';return;}
-    el.innerHTML='<div class="st">Demandes en attente</div>'+data.pending.map(p=>'<div class="cd" style="flex-wrap:wrap"><div class="inf"><div class="nm">'+p.user_name+' : '+p.domain+'</div><div class="ds">'+p.category+'</div></div><div style="display:flex;gap:6px"><button class="btn" style="width:auto;padding:6px 14px;font-size:.78rem" onclick="approvePending(\\''+p.user_id+'\\',\\''+p.category+'\\',\\''+p.domain+'\\',true)">Approuver</button><button class="btn btn-r" style="width:auto;padding:6px 14px;font-size:.78rem" onclick="approvePending(\\''+p.user_id+'\\',\\''+p.category+'\\',\\''+p.domain+'\\',false)">Refuser</button></div></div>').join('');
+    el.innerHTML='<div class="st">Demandes en attente</div>'+data.pending.map(p=>'<div class="cd" style="flex-wrap:wrap"><div class="inf"><div class="nm">'+p.user_name+' demande : '+p.domain+'</div><div class="ds">Cat\u00e9gorie : '+(p.category||'?')+'</div></div><div style="display:flex;gap:6px"><button class="btn" style="width:auto;padding:6px 14px;font-size:.78rem" onclick="approvePending(\\''+p.user_id+'\\',\\''+p.category+'\\',\\''+p.domain+'\\',true)">Approuver</button><button class="btn btn-r" style="width:auto;padding:6px 14px;font-size:.78rem" onclick="approvePending(\\''+p.user_id+'\\',\\''+p.category+'\\',\\''+p.domain+'\\',false)">Refuser</button></div></div>').join('');
   }catch(e){}
 }
 
@@ -1057,9 +1079,10 @@ async function approvePending(userId,category,domain,approved){
   showLoader();
   try{
     const res=await fetch(API+'/parrain/approve',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({parrain_id:state.parrain.parrain_id,pin:pin,user_id:userId,category:category,domain:domain,approved:approved})});
-    const data=await res.json();hideLoader();
+    const data=await res.json();
+    hideLoader();
     if(data.error){alert(data.error);return;}
-    alert(approved?'Exception approuvee !':'Demande refusee.');
+    alert(approved?'Exception approuv\u00e9e !':'Demande refus\u00e9e.');
     loadPending();
   }catch(e){hideLoader();alert('Erreur : '+e.message);}
 }
@@ -1073,7 +1096,7 @@ async function revokeFilleul(userId,userName){
     const res=await fetch(API+'/parrain/revoke-filleul',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({parrain_id:state.parrain.parrain_id,pin:pin,user_id:userId})});
     const data=await res.json();hideLoader();
     if(data.error){alert(data.error);return;}
-    alert('Tu n es plus parrain de '+userName);
+    alert('Parrain retir\u00e9 pour '+userName);
     const lRes=await fetch(API+'/parrain/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:state.parrain.name,pin:pin})});
     state.parrain=await lRes.json();go('parrain_dashboard');
   }catch(e){hideLoader();alert('Erreur : '+e.message);}
