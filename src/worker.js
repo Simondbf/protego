@@ -238,10 +238,11 @@ async function handleAPI(request, url, env) {
     // ── FILLEUL : Connexion
     if (url.pathname === '/api/login' && request.method === 'POST') {
       const { id, pin } = await request.json();
-      if (!id || !pin) return jsonRes({ error: 'Identifiant et code requis' }, 400);
+      if (!id) return jsonRes({ error: 'Identifiant requis' }, 400);
       const user = await db.prepare('SELECT * FROM users WHERE id = ?').bind(id).first();
       if (!user) return jsonRes({ error: 'Profil introuvable' }, 404);
-      if (!user.pin_hash) return jsonRes({ ok: true, id: user.id });
+      if (!user.pin_hash) return jsonRes({ ok: true, id: user.id, needs_pin: true });
+      if (!pin) return jsonRes({ error: 'Code secret requis' }, 401);
       const pinHash = await hashPin(pin);
       if (pinHash !== user.pin_hash) return jsonRes({ error: 'Code secret incorrect' }, 401);
       return jsonRes({ ok: true, id: user.id });
@@ -250,11 +251,14 @@ async function handleAPI(request, url, env) {
     // ── FILLEUL : Changer son code secret
     if (url.pathname === '/api/change-pin' && request.method === 'POST') {
       const { user_id, old_pin, new_pin } = await request.json();
-      if (!user_id || !old_pin || !new_pin || new_pin.length < 4) return jsonRes({ error: 'Donnees manquantes' }, 400);
+      if (!user_id || !new_pin || new_pin.length < 4) return jsonRes({ error: 'Donnees manquantes' }, 400);
       const user = await db.prepare('SELECT * FROM users WHERE id = ?').bind(user_id).first();
       if (!user) return jsonRes({ error: 'Profil introuvable' }, 404);
-      const oldHash = await hashPin(old_pin);
-      if (user.pin_hash && oldHash !== user.pin_hash) return jsonRes({ error: 'Ancien code incorrect' }, 401);
+      if (user.pin_hash) {
+        if (!old_pin) return jsonRes({ error: 'Ancien code requis' }, 400);
+        const oldHash = await hashPin(old_pin);
+        if (oldHash !== user.pin_hash) return jsonRes({ error: 'Ancien code incorrect' }, 401);
+      }
       const newHash = await hashPin(new_pin);
       await db.prepare('UPDATE users SET pin_hash = ? WHERE id = ?').bind(newHash, user_id).run();
       return jsonRes({ ok: true });
@@ -913,14 +917,14 @@ async function registerUser() {
 
 async function loginUser() {
   const id = $('loginId')?.value?.trim()?.toLowerCase();
-  const pin = $('loginPin')?.value;
-  if (!id) return;
-  if (!pin) return alert('Entre ton code secret');
+  const pin = $('loginPin')?.value || '';
+  if (!id) return alert('Entre ton identifiant');
   showLoader();
   try {
     const authRes = await fetch(API+'/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id,pin})});
     const authData = await authRes.json();
     if (authData.error) { hideLoader(); alert(authData.error); return; }
+    if (authData.needs_pin && !pin) { hideLoader(); alert('Pas de code secret sur ce compte. D\u00e9finis-en un apr\u00e8s connexion.'); }
     const res = await fetch(API+'/profile?id='+id);
     const data = await res.json();
     if (data.error) { hideLoader(); alert(data.error); return; }
@@ -1111,8 +1115,8 @@ async function toggleException(domain,excepted){
 function closeExcModal(){document.getElementById('excModal').classList.remove('show');go('profile')}
 
 async function changeUserPin(){
-  var old=prompt('Ancien code secret :');
-  if(!old)return;
+  var old=prompt('Ancien code secret (vide si premier code) :');
+  if(old===null)return;
   var nw=prompt('Nouveau code secret (4+ chiffres) :');
   if(!nw||nw.length<4)return alert('Code trop court');
   var nw2=prompt('Confirme le nouveau code :');
@@ -1123,7 +1127,7 @@ async function changeUserPin(){
     const data=await res.json();hideLoader();
     if(data.error){alert(data.error);return;}
     localStorage.setItem('fdns_pin',nw);
-    alert('Code secret chang\u00e9 !');
+    alert('Code secret mis \u00e0 jour !');
   }catch(e){hideLoader();alert('Erreur : '+e.message);}
 }
 
@@ -1170,8 +1174,8 @@ async function revokeFilleul(userId,userName){
 
 const savedId = localStorage.getItem('fdns_id');
 const savedPin = localStorage.getItem('fdns_pin');
-if (savedId && savedPin) {
-  fetch(API+'/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:savedId,pin:savedPin})}).then(r=>r.json()).then(auth=>{
+if (savedId) {
+  fetch(API+'/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:savedId,pin:savedPin||''})}).then(r=>r.json()).then(auth=>{
     if(auth.error){localStorage.removeItem('fdns_id');localStorage.removeItem('fdns_pin');render();return;}
     return fetch(API+'/profile?id='+savedId).then(r=>r.json()).then(d=>{
       if(!d.error){state.user=d;go('profile')}else{localStorage.removeItem('fdns_id');localStorage.removeItem('fdns_pin');render()}
