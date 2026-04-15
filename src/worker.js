@@ -200,7 +200,8 @@ async function handleAPI(request, url, env) {
   try {
     // ── FILLEUL : Créer un profil
     if (url.pathname === '/api/register' && request.method === 'POST') {
-      const { name } = await request.json();
+      const { name, pin } = await request.json();
+      if (!pin || pin.length < 4) return jsonRes({ error: 'Code secret requis (4 chiffres minimum)' }, 400);
       const id = name.toLowerCase().replace(/[^a-z0-9]/g, '');
       if (!id || id.length < 2 || id.length > 20) return jsonRes({ error: 'Prénom invalide' }, 400);
 
@@ -217,8 +218,9 @@ async function handleAPI(request, url, env) {
       const inviteCode = id.toUpperCase().slice(0, 4) + '-' + genCode();
       const hostname = `${id}.dns.rpisimon.uk`;
 
-      await db.prepare('INSERT INTO users (id, display_name, hostname, invite_code) VALUES (?, ?, ?, ?)')
-        .bind(id, name, hostname, inviteCode).run();
+      const userPinHash = await hashPin(pin);
+      await db.prepare('INSERT INTO users (id, display_name, hostname, invite_code, pin_hash) VALUES (?, ?, ?, ?, ?)')
+        .bind(id, name, hostname, inviteCode, userPinHash).run();
 
       try {
         await createAGClient(env, id);
@@ -231,6 +233,31 @@ async function handleAPI(request, url, env) {
       }
 
       return jsonRes({ id, hostname, invite_code: inviteCode });
+    }
+
+    // ── FILLEUL : Connexion
+    if (url.pathname === '/api/login' && request.method === 'POST') {
+      const { id, pin } = await request.json();
+      if (!id || !pin) return jsonRes({ error: 'Identifiant et code requis' }, 400);
+      const user = await db.prepare('SELECT * FROM users WHERE id = ?').bind(id).first();
+      if (!user) return jsonRes({ error: 'Profil introuvable' }, 404);
+      if (!user.pin_hash) return jsonRes({ ok: true, id: user.id });
+      const pinHash = await hashPin(pin);
+      if (pinHash !== user.pin_hash) return jsonRes({ error: 'Code secret incorrect' }, 401);
+      return jsonRes({ ok: true, id: user.id });
+    }
+
+    // ── FILLEUL : Changer son code secret
+    if (url.pathname === '/api/change-pin' && request.method === 'POST') {
+      const { user_id, old_pin, new_pin } = await request.json();
+      if (!user_id || !old_pin || !new_pin || new_pin.length < 4) return jsonRes({ error: 'Donnees manquantes' }, 400);
+      const user = await db.prepare('SELECT * FROM users WHERE id = ?').bind(user_id).first();
+      if (!user) return jsonRes({ error: 'Profil introuvable' }, 404);
+      const oldHash = await hashPin(old_pin);
+      if (user.pin_hash && oldHash !== user.pin_hash) return jsonRes({ error: 'Ancien code incorrect' }, 401);
+      const newHash = await hashPin(new_pin);
+      await db.prepare('UPDATE users SET pin_hash = ? WHERE id = ?').bind(newHash, user_id).run();
+      return jsonRes({ ok: true });
     }
 
     // ── FILLEUL : Récupérer profil
@@ -706,6 +733,7 @@ function homeScreen() {
   <div class="bx" style="text-align:center">
     <p style="font-size:.82rem;color:var(--tx2);margin-bottom:6px">Tu as déjà un profil ?</p>
     <input type="text" id="loginId" placeholder="Ton identifiant" />
+    <input type="password" id="loginPin" placeholder="Ton code secret" />
     <button class="btn btn2" onclick="loginUser()">Accéder à mon profil</button>
   </div>\`;
 }
@@ -716,6 +744,8 @@ function registerScreen() {
     <h3 style="font-size:1rem;margin-bottom:1rem;text-align:center">Créer mon profil</h3>
     <input type="text" id="regName" placeholder="Ton prénom (sans accent)" />
     <div class="hint" style="margin-bottom:12px">Ce prénom sera ton identifiant. Ex: paul, marc, lucas</div>
+    <input type="password" id="regPin1" placeholder="Code secret (4+ chiffres)" />
+    <input type="password" id="regPin2" placeholder="Confirme le code secret" />
     <button class="btn" onclick="registerUser()">Créer</button>
   </div>\`;
 }
@@ -745,7 +775,7 @@ function profileScreen() {
         <span class="host" style="font-size:.8rem;cursor:pointer" onclick="event.stopPropagation();navigator.clipboard.writeText('\${u.invite_code}');this.textContent='Copié !';setTimeout(()=>this.textContent='\${u.invite_code}',1500)">\${u.invite_code}</span>
       </div>\`;
 
-  return \`<span class="back" onclick="state.user=null;localStorage.removeItem('fdns_id');go('home')">← Déconnexion</span>
+  return \`<span class="back" onclick="state.user=null;localStorage.removeItem('fdns_id');localStorage.removeItem('fdns_pin');go('home')">← Déconnexion</span>
   <div style="text-align:center;margin-bottom:1rem">
     <div class="host" onclick="navigator.clipboard.writeText('\${u.hostname}');this.textContent='Copié !';setTimeout(()=>this.textContent='\${u.hostname}',1500)" style="cursor:pointer">\${u.hostname}</div>
     <div class="hint">Tape dans DNS Privé Android · clique pour copier</div>
@@ -776,6 +806,7 @@ function profileScreen() {
       <div class="hint">Le site sera bloqué immédiatement pour tous les utilisateurs.</div>
     </div>
   </div>
+  <button class="btn btn2" onclick="changeUserPin()" style="margin-top:8px">Changer mon code secret</button>
   <div class="setup"><h3>📱 Installation (30 secondes)</h3><ol>
     <li><strong>Paramètres</strong> → <strong>Réseau et Internet</strong> → <strong>DNS Privé</strong></li>
     <li>Nom d'hôte : <code>\${u.hostname}</code></li>
@@ -865,7 +896,11 @@ function go(screen) { state.screen = screen; render(); if(screen==='parrain_dash
 async function registerUser() {
   const name = $('regName')?.value?.trim();
   if (!name) return alert('Remplis ton prénom');
-  const res = await fetch(API+'/register', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({name}) });
+  const pin1 = $('regPin1')?.value;
+  const pin2 = $('regPin2')?.value;
+  if (!pin1 || pin1.length < 4) return alert('Code secret requis (4 chiffres minimum)');
+  if (pin1 !== pin2) return alert('Les codes ne correspondent pas');
+  const res = await fetch(API+'/register', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({name,pin:pin1}) });
   const data = await res.json();
   if (data.error) { alert(data.error + (data.suggestion ? ' → '+data.suggestion : '')); return; }
   localStorage.setItem('fdns_id', data.id);
@@ -878,13 +913,23 @@ async function registerUser() {
 
 async function loginUser() {
   const id = $('loginId')?.value?.trim()?.toLowerCase();
+  const pin = $('loginPin')?.value;
   if (!id) return;
-  const res = await fetch(API+'/profile?id='+id);
-  const data = await res.json();
-  if (data.error) { alert(data.error); return; }
-  state.user = data;
-  localStorage.setItem('fdns_id', id);
-  go('profile');
+  if (!pin) return alert('Entre ton code secret');
+  showLoader();
+  try {
+    const authRes = await fetch(API+'/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id,pin})});
+    const authData = await authRes.json();
+    if (authData.error) { hideLoader(); alert(authData.error); return; }
+    const res = await fetch(API+'/profile?id='+id);
+    const data = await res.json();
+    if (data.error) { hideLoader(); alert(data.error); return; }
+    state.user = data;
+    localStorage.setItem('fdns_id', id);
+    localStorage.setItem('fdns_pin', pin);
+    hideLoader();
+    go('profile');
+  } catch(e) { hideLoader(); alert('Erreur : '+e.message); }
 }
 
 function userToggle(cat, el) {
@@ -1065,6 +1110,23 @@ async function toggleException(domain,excepted){
 }
 function closeExcModal(){document.getElementById('excModal').classList.remove('show');go('profile')}
 
+async function changeUserPin(){
+  var old=prompt('Ancien code secret :');
+  if(!old)return;
+  var nw=prompt('Nouveau code secret (4+ chiffres) :');
+  if(!nw||nw.length<4)return alert('Code trop court');
+  var nw2=prompt('Confirme le nouveau code :');
+  if(nw!==nw2)return alert('Les codes ne correspondent pas');
+  showLoader();
+  try{
+    const res=await fetch(API+'/change-pin',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({user_id:state.user.id,old_pin:old,new_pin:nw})});
+    const data=await res.json();hideLoader();
+    if(data.error){alert(data.error);return;}
+    localStorage.setItem('fdns_pin',nw);
+    alert('Code secret chang\u00e9 !');
+  }catch(e){hideLoader();alert('Erreur : '+e.message);}
+}
+
 async function loadPending(){
   if(!state.parrain)return;
   try{
@@ -1107,17 +1169,21 @@ async function revokeFilleul(userId,userName){
 }
 
 const savedId = localStorage.getItem('fdns_id');
-if (savedId) {
-  fetch(API+'/profile?id='+savedId).then(r=>r.json()).then(d=>{
-    if(!d.error){state.user=d;go('profile')}else{localStorage.removeItem('fdns_id');render()}
+const savedPin = localStorage.getItem('fdns_pin');
+if (savedId && savedPin) {
+  fetch(API+'/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:savedId,pin:savedPin})}).then(r=>r.json()).then(auth=>{
+    if(auth.error){localStorage.removeItem('fdns_id');localStorage.removeItem('fdns_pin');render();return;}
+    return fetch(API+'/profile?id='+savedId).then(r=>r.json()).then(d=>{
+      if(!d.error){state.user=d;go('profile')}else{localStorage.removeItem('fdns_id');localStorage.removeItem('fdns_pin');render()}
+    });
   }).catch(()=>render());
 } else render();
 
 document.addEventListener('keydown', function(e) {
   if (e.key !== 'Enter') return;
   const id = e.target.id;
-  if (id === 'regName') registerUser();
-  if (id === 'loginId') loginUser();
+  if (id === 'regName' || id === 'regPin1' || id === 'regPin2') registerUser();
+  if (id === 'loginId' || id === 'loginPin') loginUser();
   if (id === 'pName' || id === 'pPin') parrainLogin();
   if (id === 'invCode' || id === 'invName' || id === 'invPin1' || id === 'invPin2') parrainRegister();
   if (id === 'confirmPin') confirmAction();
