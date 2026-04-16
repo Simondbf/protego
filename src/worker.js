@@ -604,470 +604,651 @@ function HTML() {
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
 <title>FiltresDNS</title>
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#0c0f14;--bg2:#151921;--bg3:#1c2230;--tx:#e4e7ed;--tx2:#7c839a;--tx3:#52566a;--g:#22c55e;--g2:#16a34a;--r:#ef4444;--am:#f59e0b;--bd:rgba(255,255,255,0.08);--rd:12px}
-*{box-sizing:border-box;margin:0;padding:0}
-body{background:var(--bg);color:var(--tx);font-family:'DM Sans',sans-serif;min-height:100vh}
-.c{max-width:500px;margin:0 auto;padding:2rem 1rem}
-.hd{text-align:center;margin-bottom:1.5rem}
-.hd h1{font-size:1.5rem;font-weight:600}
-.hd p{color:var(--tx2);font-size:.82rem;margin-top:.3rem}
-.bx{background:var(--bg2);border:1px solid var(--bd);border-radius:var(--rd);padding:1.5rem;margin-bottom:1rem}
-input[type=text],input[type=password]{width:100%;padding:11px 14px;border-radius:8px;border:1px solid var(--bd);background:var(--bg3);color:var(--tx);font-family:'DM Sans';font-size:.95rem;outline:0;margin-bottom:8px}
-input:focus{border-color:var(--g)}
-input::placeholder{color:var(--tx3)}
-.btn{width:100%;padding:11px;border-radius:8px;border:none;background:var(--g);color:#fff;font-family:'DM Sans';font-size:.92rem;font-weight:600;cursor:pointer}
-.btn:hover{background:var(--g2)}
-.btn2{background:transparent;border:1px solid var(--bd);color:var(--tx2)}
-.btn2:hover{border-color:var(--tx2);color:var(--tx)}
-.btn-r{background:var(--r)}
-.btn-r:hover{background:#dc2626}
-.st{font-size:11px;text-transform:uppercase;letter-spacing:1.2px;color:var(--tx3);font-weight:500;margin-bottom:8px;padding-left:2px}
-.cd{background:var(--bg2);border:1px solid var(--bd);border-radius:var(--rd);padding:11px 13px;margin-bottom:5px;display:flex;align-items:center;gap:10px}
-.cd:hover{border-color:rgba(255,255,255,.15)}
-.cd .i{font-size:1.2rem;width:28px;text-align:center;flex-shrink:0}
-.cd .inf{flex:1;min-width:0}
-.cd .nm{font-size:.88rem;font-weight:500}
-.cd .ds{font-size:.72rem;color:var(--tx2);margin-top:1px}
-.badge{font-size:.68rem;padding:2px 8px;border-radius:4px;font-weight:600;white-space:nowrap}
-.badge-r{background:rgba(239,68,68,.15);color:var(--r)}
-.badge-g{background:rgba(34,197,94,.15);color:var(--g)}
-.badge-a{background:rgba(245,158,11,.15);color:var(--am)}
-.tg{position:relative;width:40px;height:22px;flex-shrink:0}
+:root{
+  --bg:#f4f6fa;
+  --surface:#ffffff;
+  --surface-2:#f8fafc;
+  --primary:#6366f1;
+  --primary-d:#4f46e5;
+  --primary-light:#eef2ff;
+  --success:#10b981;
+  --success-light:#d1fae5;
+  --danger:#ef4444;
+  --danger-light:#fee2e2;
+  --warning:#f59e0b;
+  --warning-light:#ffedd5;
+  --text:#0f172a;
+  --text-2:#475569;
+  --text-3:#94a3b8;
+  --border:#e2e8f0;
+  --shadow:0 1px 3px rgba(0,0,0,0.05),0 4px 12px rgba(0,0,0,0.04);
+  --radius:16px;
+  --radius-sm:10px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{
+  background:var(--bg);
+  color:var(--text);
+  font-family:'Inter',system-ui,sans-serif;
+  font-size:15px;
+  line-height:1.5;
+  min-height:100vh;
+  padding:0;
+  background-image:radial-gradient(circle at 100% 0%,rgba(99,102,241,0.08) 0%,transparent 50%);
+  background-attachment:fixed;
+}
+.c{max-width:560px;margin:0 auto;padding:1rem 1rem 5rem}
+
+/* Header */
+.hd{text-align:center;padding:1.5rem 0 1rem}
+.hd-logo{display:inline-flex;align-items:center;gap:10px;font-weight:700;font-size:1.5rem;color:var(--text)}
+.hd-logo-icon{width:36px;height:36px;background:linear-gradient(135deg,var(--primary),var(--primary-d));border-radius:10px;display:flex;align-items:center;justify-content:center;color:white;font-size:1.2rem;box-shadow:0 4px 12px rgba(99,102,241,0.3)}
+.hd-sub{color:var(--text-2);font-size:.85rem;margin-top:6px}
+
+/* Cards */
+.card{background:var(--surface);border-radius:var(--radius);padding:1.25rem;margin-bottom:1rem;box-shadow:var(--shadow);border:1px solid var(--border)}
+.card-title{font-size:.72rem;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text-3);margin-bottom:.75rem;padding-left:2px}
+
+/* Inputs */
+input[type=text],input[type=password],select{
+  width:100%;padding:12px 14px;border-radius:var(--radius-sm);border:1.5px solid var(--border);
+  background:var(--surface);color:var(--text);font-family:inherit;font-size:.92rem;outline:none;
+  margin-bottom:8px;transition:border-color .15s, box-shadow .15s;
+}
+input:focus,select:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(99,102,241,0.1)}
+input::placeholder{color:var(--text-3)}
+
+/* Buttons */
+.btn{
+  width:100%;padding:12px;border-radius:var(--radius-sm);border:none;
+  background:var(--primary);color:white;font-family:inherit;font-size:.92rem;font-weight:600;
+  cursor:pointer;transition:all .15s;display:inline-flex;align-items:center;justify-content:center;gap:6px;
+}
+.btn:hover{background:var(--primary-d);transform:translateY(-1px);box-shadow:0 6px 14px rgba(99,102,241,0.25)}
+.btn:active{transform:translateY(0)}
+.btn-2{background:var(--surface);color:var(--text);border:1.5px solid var(--border);box-shadow:none}
+.btn-2:hover{background:var(--surface-2);border-color:var(--text-3);box-shadow:none}
+.btn-danger{background:var(--danger)}
+.btn-danger:hover{background:#dc2626;box-shadow:0 6px 14px rgba(239,68,68,0.25)}
+.btn-ghost{background:transparent;color:var(--text-2);border:none;box-shadow:none;padding:8px 12px;width:auto;font-size:.82rem}
+.btn-ghost:hover{background:var(--surface-2);color:var(--text);transform:none;box-shadow:none}
+
+/* List items */
+.row{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:var(--radius-sm);transition:background .15s}
+.row+.row{margin-top:2px}
+.row:hover{background:var(--surface-2)}
+.row-icon{width:36px;height:36px;background:var(--surface-2);border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0;border:1px solid var(--border)}
+.row-body{flex:1;min-width:0}
+.row-title{font-weight:600;font-size:.9rem;color:var(--text)}
+.row-sub{font-size:.72rem;color:var(--text-2);margin-top:2px}
+.row-sub-accent{color:var(--success);font-size:.68rem;margin-top:2px;font-family:'JetBrains Mono',monospace}
+
+/* Badges */
+.badge{display:inline-block;font-size:.68rem;font-weight:600;padding:3px 8px;border-radius:6px;letter-spacing:.02em}
+.badge-req{background:var(--danger-light);color:var(--danger)}
+.badge-ok{background:var(--success-light);color:#065f46}
+.badge-warn{background:var(--warning-light);color:#92400e}
+.badge-info{background:var(--primary-light);color:var(--primary-d)}
+
+/* Toggle */
+.tg{position:relative;width:42px;height:24px;flex-shrink:0}
 .tg input{opacity:0;width:0;height:0;position:absolute}
-.tg-s{position:absolute;inset:0;background:var(--bg3);border-radius:11px;cursor:pointer;transition:.25s;border:1px solid var(--bd)}
-.tg-s::before{content:'';position:absolute;width:16px;height:16px;left:2px;top:2px;background:var(--tx2);border-radius:50%;transition:.25s}
-.tg input:checked+.tg-s{background:var(--g);border-color:var(--g)}
-.tg input:checked+.tg-s::before{transform:translateX(18px);background:#fff}
-.tg input:disabled+.tg-s{opacity:.4;cursor:not-allowed}
-.host{font-family:'DM Mono',monospace;font-size:.95rem;color:var(--g);background:var(--bg3);padding:7px 14px;border-radius:6px;display:inline-block;cursor:pointer}
-.or{text-align:center;color:var(--tx3);font-size:.78rem;margin:8px 0}
-.hint{font-size:.72rem;color:var(--tx3);margin-top:6px;text-align:center}
-.setup{background:var(--bg2);border:1px solid var(--bd);border-radius:var(--rd);padding:1rem;font-size:.8rem;color:var(--tx2);line-height:1.6;margin-top:1rem}
-.setup h3{color:var(--tx);font-size:.85rem;margin-bottom:5px;font-weight:500}
-.setup ol{padding-left:1.1rem}
-.setup code{font-family:'DM Mono';font-size:.75rem;background:var(--bg3);padding:1px 5px;border-radius:3px;color:var(--g)}
-.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:1rem}
-.stat{background:var(--bg3);border-radius:8px;padding:10px;text-align:center}
-.stat .n{font-size:1.2rem;font-weight:500}
-.stat .l{font-size:.68rem;color:var(--tx3);margin-top:2px}
-.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:100;align-items:center;justify-content:center}
+.tg-s{position:absolute;inset:0;background:#cbd5e1;border-radius:12px;cursor:pointer;transition:.2s}
+.tg-s::before{content:'';position:absolute;width:18px;height:18px;left:3px;top:3px;background:white;border-radius:50%;transition:.2s;box-shadow:0 2px 4px rgba(0,0,0,0.15)}
+.tg input:checked+.tg-s{background:var(--success)}
+.tg input:checked+.tg-s::before{transform:translateX(18px)}
+.tg input:disabled+.tg-s{opacity:.5;cursor:not-allowed}
+
+/* Host code */
+.host{display:inline-flex;align-items:center;gap:6px;font-family:'JetBrains Mono',monospace;font-size:.85rem;background:var(--primary-light);color:var(--primary-d);padding:8px 14px;border-radius:999px;cursor:pointer;font-weight:500;border:1px solid transparent;transition:.15s}
+.host:hover{border-color:var(--primary)}
+.host.success{background:var(--success-light);color:#065f46}
+
+/* Back link */
+.back{display:inline-flex;align-items:center;gap:4px;font-size:.85rem;color:var(--text-2);cursor:pointer;margin-bottom:1rem;font-weight:500}
+.back:hover{color:var(--text)}
+
+/* Stats */
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:1rem 0}
+.stat{background:var(--surface-2);border-radius:var(--radius-sm);padding:12px 8px;text-align:center;border:1px solid var(--border)}
+.stat-n{font-size:1.3rem;font-weight:700;color:var(--text);font-family:'JetBrains Mono',monospace}
+.stat-l{font-size:.65rem;color:var(--text-2);margin-top:2px;text-transform:uppercase;letter-spacing:.05em}
+
+/* Modal */
+.modal-bg{position:fixed;inset:0;background:rgba(15,23,42,0.5);backdrop-filter:blur(4px);display:none;align-items:center;justify-content:center;z-index:200;padding:1rem}
 .modal-bg.show{display:flex}
-.modal{background:var(--bg2);border:1px solid var(--bd);border-radius:var(--rd);padding:1.5rem;max-width:360px;width:90%;text-align:center}
-.modal h3{font-size:1rem;font-weight:500;margin-bottom:.8rem}
-.modal p{font-size:.85rem;color:var(--tx2);margin-bottom:1rem;line-height:1.5}
-.modal .btns{display:flex;gap:8px}
-.modal .btns .btn{flex:1}
-.back{font-size:.82rem;color:var(--tx2);cursor:pointer;margin-bottom:1rem;display:inline-block}
-.back:hover{color:var(--tx)}
-.hidden{display:none!important}
-.loader-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:200;align-items:center;justify-content:center;flex-direction:column}
+.modal{background:var(--surface);border-radius:20px;width:100%;max-width:380px;padding:1.5rem;box-shadow:0 20px 40px rgba(0,0,0,0.15)}
+.modal h3{font-size:1.05rem;font-weight:600;margin-bottom:.5rem}
+.modal p{color:var(--text-2);font-size:.88rem;margin-bottom:1rem}
+.modal-btns{display:flex;gap:8px;margin-top:1rem}
+.modal-btns .btn{flex:1}
+
+/* Toast */
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(100px);background:var(--text);color:white;padding:12px 20px;border-radius:12px;font-size:.88rem;font-weight:500;z-index:300;opacity:0;transition:.25s;box-shadow:0 10px 25px rgba(0,0,0,0.2);pointer-events:none;max-width:90%}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast.error{background:var(--danger)}
+.toast.success{background:var(--success)}
+
+/* Loader */
+.loader-bg{position:fixed;inset:0;background:rgba(255,255,255,0.75);backdrop-filter:blur(4px);display:none;align-items:center;justify-content:center;z-index:250}
 .loader-bg.show{display:flex}
-.spinner{width:36px;height:36px;border:3px solid var(--bg3);border-top-color:var(--g);border-radius:50%;animation:spin .8s linear infinite}
+.spin{width:40px;height:40px;border:3px solid var(--border);border-top-color:var(--primary);border-radius:50%;animation:spin .7s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
-.loader-text{color:var(--tx2);font-size:.85rem;margin-top:12px}
-.exc-item{display:flex;align-items:center;gap:8px;padding:8px 10px;border-bottom:1px solid var(--bd)}
+
+/* Exceptions modal */
+.exc-item{display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid var(--border)}
 .exc-item:last-child{border-bottom:none}
-.exc-item .domain{flex:1;font-family:'DM Mono';font-size:.78rem;color:var(--tx2);overflow:hidden;text-overflow:ellipsis}
-.exc-item .domain.excepted{color:var(--g)}
-.exc-item .domain.pending{color:var(--am);font-style:italic}
-.exc-link{font-size:.72rem;color:var(--am);cursor:pointer;margin-top:4px;display:inline-block}
+.exc-dom{flex:1;font-family:'JetBrains Mono',monospace;font-size:.78rem;color:var(--text-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.exc-dom.excepted{color:var(--success);font-weight:600}
+.exc-dom.pending{color:var(--warning);font-style:italic}
+.exc-link{display:inline-block;font-size:.72rem;color:var(--warning);cursor:pointer;margin-top:4px;font-weight:500}
 .exc-link:hover{text-decoration:underline}
-.warn{font-size:.72rem;color:var(--am);background:rgba(245,158,11,.1);padding:8px 10px;border-radius:6px;margin-bottom:8px;line-height:1.4}
+
+/* Misc */
+.hidden{display:none!important}
+.warn{font-size:.78rem;background:var(--warning-light);color:#92400e;padding:10px 12px;border-radius:var(--radius-sm);margin-bottom:10px;line-height:1.45}
+.or{text-align:center;color:var(--text-3);font-size:.78rem;margin:12px 0;position:relative}
+.or::before,.or::after{content:'';position:absolute;top:50%;width:40%;height:1px;background:var(--border)}
+.or::before{left:0}.or::after{right:0}
+.hint{font-size:.72rem;color:var(--text-3);margin-top:8px;text-align:center}
+.mt{margin-top:12px}
+.mt-lg{margin-top:1.5rem}
+
+/* Setup guide */
+.setup{background:var(--primary-light);border-radius:var(--radius);padding:1rem;font-size:.82rem;color:var(--text);line-height:1.6;margin-top:1rem;border:1px solid #c7d2fe}
+.setup h3{color:var(--primary-d);font-size:.85rem;margin-bottom:8px;font-weight:700;display:flex;align-items:center;gap:6px}
+.setup ol{padding-left:1.2rem;color:var(--text-2)}
+.setup code{font-family:'JetBrains Mono',monospace;font-size:.75rem;background:white;padding:2px 6px;border-radius:4px;color:var(--primary-d);border:1px solid #c7d2fe;font-weight:500}
+
+/* Suggestion */
+.sugg{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:var(--surface-2);border-radius:var(--radius-sm);margin-top:8px;font-size:.78rem;color:var(--text-2);border:1px solid var(--border)}
+.sugg-dep{color:var(--success);font-family:'JetBrains Mono',monospace;font-size:.72rem;margin-top:2px}
 </style>
 </head>
 <body>
+
 <div class="c">
-  <div class="hd"><h1>🛡️ FiltresDNS</h1><p>Filtrage DNS personnel</p></div>
+  <div class="hd">
+    <div class="hd-logo">
+      <div class="hd-logo-icon">\u{1F6E1}\uFE0F</div>
+      FiltresDNS
+    </div>
+    <div class="hd-sub">Filtrage DNS personnalisé</div>
+  </div>
   <div id="app"></div>
 </div>
 
-<div class="loader-bg" id="loader"><div class="spinner"></div><div class="loader-text">Chargement en cours...</div></div>
-<div class="modal-bg" id="excModal"><div class="modal" style="text-align:left;max-height:80vh;overflow-y:auto"><h3 id="excTitle" style="text-align:center"></h3><div class="warn">D\u00e9bloquer un domaine le rend accessible sur le site ET l\u2019appli. Le DNS ne peut pas les diff\u00e9rencier.</div><input type="text" id="excSearch" placeholder="Rechercher un domaine..." style="margin-bottom:8px" oninput="filterExcDomains()" /><div id="excList" style="max-height:300px;overflow-y:auto"></div><div style="margin-top:12px"><button class="btn btn2" onclick="closeExcModal()">Fermer</button></div></div></div>
+<div class="loader-bg" id="loader"><div class="spin"></div></div>
+
+<div class="modal-bg" id="excModal">
+  <div class="modal" style="max-width:460px;max-height:82vh;overflow-y:auto">
+    <h3 id="excTitle"></h3>
+    <div class="warn">Débloquer un domaine le rend accessible sur le site et l\u2019appli. Le DNS ne peut pas les différencier.</div>
+    <input type="text" id="excSearch" placeholder="Rechercher..." oninput="filterExcDomains()">
+    <div id="excList" style="max-height:340px;overflow-y:auto;margin-top:8px"></div>
+    <button class="btn btn-2 mt" onclick="closeExcModal()">Fermer</button>
+  </div>
+</div>
+
 <div class="modal-bg" id="confirmModal">
   <div class="modal">
     <h3 id="confirmTitle"></h3>
     <p id="confirmMsg"></p>
-    <input type="password" id="confirmPin" placeholder="Code secret du parrain" class="hidden" style="margin-bottom:12px"/>
-    <div class="btns">
-      <button class="btn btn2" onclick="closeModal()">Annuler</button>
+    <input type="password" id="confirmPin" placeholder="Code secret" class="hidden">
+    <div class="modal-btns">
+      <button class="btn btn-2" onclick="closeModal()">Annuler</button>
       <button class="btn" id="confirmBtn" onclick="confirmAction()">Confirmer</button>
     </div>
   </div>
 </div>
 
+<div class="toast" id="toast"></div>
+
 <script>
-const API = '/api';
-let excDomains=[];let excCategory='';
-function showLoader(){document.getElementById('loader').classList.add('show')}
-function hideLoader(){document.getElementById('loader').classList.remove('show')}
-let state = { screen: 'home', user: null, parrain: null, filleulDetail: null };
-let pendingAction = null;
+const API='/api';
+let state={screen:'home',user:null,parrain:null,filleulDetail:null};
+let pendingAction=null;
+let excDomains=[];
+let excCategory='';
 
-function $(id) { return document.getElementById(id); }
+function $(id){return document.getElementById(id)}
+function showLoader(){$('loader').classList.add('show')}
+function hideLoader(){$('loader').classList.remove('show')}
 
-function render() {
-  const app = $('app');
-  switch(state.screen) {
-    case 'home': app.innerHTML = homeScreen(); break;
-    case 'register': app.innerHTML = registerScreen(); break;
-    case 'profile': app.innerHTML = profileScreen(); break;
-    case 'parrain_login': app.innerHTML = parrainLoginScreen(); break;
-    case 'parrain_invite': app.innerHTML = parrainInviteScreen(); break;
-    case 'parrain_dashboard': app.innerHTML = parrainDashScreen(); break;
-    case 'parrain_detail': app.innerHTML = parrainDetailScreen(); break;
+function toast(msg,type){
+  const t=$('toast');
+  t.textContent=msg;
+  t.className='toast show '+(type||'');
+  setTimeout(()=>t.className='toast',2800);
+}
+
+function render(){
+  const app=$('app');
+  switch(state.screen){
+    case'home':app.innerHTML=homeScreen();break;
+    case'register':app.innerHTML=registerScreen();break;
+    case'profile':app.innerHTML=profileScreen();break;
+    case'parrain_login':app.innerHTML=parrainLoginScreen();break;
+    case'parrain_invite':app.innerHTML=parrainInviteScreen();break;
+    case'parrain_dashboard':app.innerHTML=parrainDashScreen();break;
+    case'parrain_detail':app.innerHTML=parrainDetailScreen();break;
   }
 }
 
-function homeScreen() {
-  return \`<div class="bx" style="text-align:center">
-    <h3 style="font-size:1.05rem;margin-bottom:1rem">Bienvenue</h3>
+function homeScreen(){
+  return \`
+  <div class="card" style="text-align:center">
+    <div style="font-size:2.5rem;margin-bottom:8px">\u{1F44B}</div>
+    <h3 style="font-size:1.1rem;margin-bottom:4px">Bienvenue</h3>
+    <p style="color:var(--text-2);font-size:.85rem;margin-bottom:1rem">Crée ton profil ou accède à ton espace</p>
     <button class="btn" onclick="go('register')" style="margin-bottom:8px">Créer mon profil</button>
-    <button class="btn btn2" onclick="go('parrain_login')" style="margin-bottom:8px">Je suis parrain</button>
-    <div class="or">— ou —</div>
-    <div style="margin-top:8px">
-      <p style="font-size:.82rem;color:var(--tx2);margin-bottom:8px">Utiliser le DNS de base (tout bloqué, sans profil) :</p>
-      <div class="host">dns.rpisimon.uk</div>
-    </div>
-    <div class="hint" style="margin-top:12px">Le DNS de base bloque toutes les catégories par défaut. Crée un profil pour personnaliser.</div>
+    <button class="btn btn-2" onclick="go('parrain_login')">Je suis parrain</button>
+    <div class="or">ou</div>
+    <p style="font-size:.78rem;color:var(--text-2);margin-bottom:8px">DNS de base (sans profil) :</p>
+    <div class="host" onclick="navigator.clipboard.writeText('dns.rpisimon.uk');toast('Copié !','success')">dns.rpisimon.uk</div>
+    <div class="hint">Toutes les catégories bloquées par défaut</div>
   </div>
-  <div class="bx" style="text-align:center">
-    <p style="font-size:.82rem;color:var(--tx2);margin-bottom:6px">Tu as déjà un profil ?</p>
-    <input type="text" id="loginId" placeholder="Ton identifiant" />
-    <input type="password" id="loginPin" placeholder="Ton code secret" />
-    <button class="btn btn2" onclick="loginUser()">Accéder à mon profil</button>
-  </div>\`;
+  <div class="card">
+    <div class="card-title">\u{1F511} J\u2019ai déjà un profil</div>
+    <input type="text" id="loginId" placeholder="Identifiant (ex: paul)">
+    <input type="password" id="loginPin" placeholder="Code secret">
+    <button class="btn btn-2" onclick="loginUser()">Se connecter</button>
+  </div>
+  <div class="hint" style="margin-top:1rem;padding:0 1rem">\u{1F4AC} Des idées, un bug ou autres choses, n\u2019hésites pas à m\u2019en faire part :)</div>
+  \`;
 }
 
-function registerScreen() {
-  return \`<span class="back" onclick="go('home')">← Retour</span>
-  <div class="bx">
-    <h3 style="font-size:1rem;margin-bottom:1rem;text-align:center">Créer mon profil</h3>
-    <input type="text" id="regName" placeholder="Ton prénom (sans accent)" />
-    <div class="hint" style="margin-bottom:12px">Ce prénom sera ton identifiant. Ex: paul, marc, lucas</div>
-    <input type="password" id="regPin1" placeholder="Code secret (4+ chiffres)" />
-    <input type="password" id="regPin2" placeholder="Confirme le code secret" />
-    <button class="btn" onclick="registerUser()">Créer</button>
-  </div>\`;
+function registerScreen(){
+  return \`
+  <span class="back" onclick="go('home')">\u2190 Retour</span>
+  <div class="card">
+    <h3 style="margin-bottom:1rem">Créer mon profil</h3>
+    <input type="text" id="regName" placeholder="Ton prénom (sans accent)">
+    <div class="hint" style="text-align:left;margin-bottom:12px">Ce prénom sera ton identifiant. Ex: paul, marc, lucas</div>
+    <input type="password" id="regPin1" placeholder="Code secret (4+ chiffres)">
+    <input type="password" id="regPin2" placeholder="Confirme le code secret">
+    <button class="btn mt" onclick="registerUser()">Créer mon profil</button>
+  </div>
+  \`;
 }
 
-function profileScreen() {
-  const u = state.user;
-  if (!u) return '';
-  let catsHtml = '';
-  for (const [key, cat] of Object.entries(u.categories || {})) {
-    const locked = cat.blocked && cat.locked_by;
-    const lockInfo = locked ? (cat.locked_by === 'user' ? 'Activé par toi · verrouillé' : 'Géré par ton parrain') : 'Non activé';
-    const excInfo = (cat.blocked && cat.exceptions > 0) ? ' \u00b7 ' + cat.exceptions + ' exception(s)' : '';
-    const pendInfo = (cat.blocked && cat.pending > 0) ? ' \u00b7 ' + cat.pending + ' en attente' : '';
-    const excLink = (cat.blocked && key !== 'yt_safesearch') ? '<span class="exc-link" onclick="openExceptions(\\'' + key + '\\')">G\u00e9rer les exceptions</span>' : '';
-    catsHtml += \`<div class="cd" style="flex-wrap:wrap">
-      <div class="i">\${CAT_LABELS[key]?.icon||''}</div>
-      <div class="inf"><div class="nm">\${cat.name}</div><div class="ds">\${lockInfo}\${excInfo}\${pendInfo}</div>\${excLink}</div>
-      <label class="tg"><input type="checkbox" \${cat.blocked?'checked':''} \${locked?'disabled':''}
-        onchange="userToggle('\${key}',this)" /><span class="tg-s"></span></label>
+function profileScreen(){
+  const u=state.user;
+  if(!u)return'';
+  let catsHtml='';
+  for(const[key,cat]of Object.entries(u.categories||{})){
+    const locked=cat.blocked&&cat.locked_by;
+    const lockInfo=locked?(cat.locked_by==='user'?'Activé par toi · verrouillé':'Géré par ton parrain'):'Non activé';
+    const excInfo=(cat.blocked&&cat.exceptions>0)?' · '+cat.exceptions+' exception(s)':'';
+    const pendInfo=(cat.blocked&&cat.pending>0)?' · '+cat.pending+' en attente':'';
+    const excLink=(cat.blocked&&key!=='yt_safesearch')?'<span class="exc-link" onclick="openExceptions(\\''+key+'\\')">Gérer les exceptions \u2192</span>':'';
+    const statusBadge=locked?'<span class="badge badge-info">Actif</span>':'';
+    catsHtml+=\`<div class="row">
+      <div class="row-icon">\${CAT_LABELS[key]?.icon||''}</div>
+      <div class="row-body">
+        <div class="row-title">\${cat.name}</div>
+        <div class="row-sub">\${lockInfo}\${excInfo}\${pendInfo}</div>
+        \${excLink}
+      </div>
+      <label class="tg"><input type="checkbox" \${cat.blocked?'checked':''} \${locked?'disabled':''} onchange="userToggle('\${key}',this)"><span class="tg-s"></span></label>
     </div>\`;
   }
 
-  const inviteHtml = u.has_parrain
-    ? \`<div class="cd"><div class="inf"><div class="nm">Parrain : \${u.parrain}</div></div><span class="badge badge-g">Associé</span></div>\`
-    : \`<div class="cd">
-        <div class="inf"><div class="nm">Code d'invitation</div><div class="ds">Envoie ce code à ton parrain</div></div>
-        <span class="host" style="font-size:.8rem;cursor:pointer" onclick="event.stopPropagation();navigator.clipboard.writeText('\${u.invite_code}');this.textContent='Copié !';setTimeout(()=>this.textContent='\${u.invite_code}',1500)">\${u.invite_code}</span>
-      </div>\`;
+  const inviteHtml=u.has_parrain
+    ?\`<div class="row"><div class="row-icon">\u{1F464}</div><div class="row-body"><div class="row-title">Parrain : \${u.parrain}</div></div><span class="badge badge-ok">Associé</span></div>\`
+    :\`<div class="row"><div class="row-icon">\u{1F4E9}</div><div class="row-body"><div class="row-title">Code d\u2019invitation</div><div class="row-sub">Envoie ce code à ton parrain</div></div><span class="host" onclick="event.stopPropagation();navigator.clipboard.writeText('\${u.invite_code}');this.textContent='Copié !';this.classList.add('success');setTimeout(()=>{this.textContent='\${u.invite_code}';this.classList.remove('success')},1500)">\${u.invite_code}</span></div>\`;
 
-  return \`<span class="back" onclick="state.user=null;localStorage.removeItem('fdns_id');localStorage.removeItem('fdns_pin');go('home')">← Déconnexion</span>
-  <div style="text-align:center;margin-bottom:1rem">
-    <div class="host" onclick="navigator.clipboard.writeText('\${u.hostname}');this.textContent='Copié !';setTimeout(()=>this.textContent='\${u.hostname}',1500)" style="cursor:pointer">\${u.hostname}</div>
-    <div class="hint">Tape dans DNS Privé Android · clique pour copier</div>
+  return \`
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
+    <span class="back" onclick="logout()">\u2190 Déconnexion</span>
+    <span class="host" onclick="navigator.clipboard.writeText('\${u.hostname}');this.textContent='Copié !';this.classList.add('success');setTimeout(()=>{this.textContent='\${u.hostname}';this.classList.remove('success')},1500)">\${u.hostname}</span>
   </div>
-  \${inviteHtml}
-  <div style="margin-top:1rem"><div class="st">Catégories toujours actives</div>
-  \${u.mandatory.map(m=>\`<div class="cd"><div class="i">\${m.icon}</div><div class="inf"><div class="nm">\${m.name}</div><div class="ds">\${m.count} domaines</div></div><span class="badge badge-r">Obligatoire</span></div>\`).join('')}
+  <div class="card">
+    <div class="card-title">\u{1F464} Mon profil</div>
+    \${inviteHtml}
   </div>
-  <div style="margin-top:1rem"><div class="st">Catégories optionnelles</div>\${catsHtml}</div>
-  <div style="margin-top:1rem"><div class="st">Proposer un site à bloquer</div>
-    <div class="bx">
-      <input type="text" id="suggestUrl" placeholder="URL du site (ex: exemple.com)" />
-      <select id="suggestCat" style="width:100%;padding:11px 14px;border-radius:8px;border:1px solid var(--bd);background:var(--bg3);color:var(--tx);font-family:'DM Sans';font-size:.92rem;margin-bottom:8px;outline:0">
-        <option value="" disabled selected>Catégorie du site</option>
-        <option value="adulte">Contenus pour adultes</option>
-        <option value="webcam">Webcams adultes</option>
-        <option value="hentai">Hentai / Comics adultes</option>
-        <option value="ia_nsfw">IA suggestive / NSFW</option>
-        <option value="manga">Manga / Webtoon / Scantrad</option>
-        <option value="gambling">Jeux d'argent / Paris sportifs</option>
-        <option value="search">Moteurs de recherche</option>
-        <option value="ai_mixed">IA mixtes</option>
-        <option value="tor">Tor / Anonymisation</option>
-        <option value="autre">Autre (préciser ci-dessous)</option>
-      </select>
-      <input type="text" id="suggestOther" placeholder="Précise le type de site (si Autre)" style="display:none" />
-      <button class="btn" onclick="suggestSite()">Ajouter au filtre</button>
-      <div class="hint">Le site sera bloqué immédiatement pour tous les utilisateurs.</div>
-    </div>
+  <div class="card">
+    <div class="card-title">\u{1F512} Blocages obligatoires</div>
+    \${u.mandatory.map(m=>\`<div class="row"><div class="row-icon">\${m.icon}</div><div class="row-body"><div class="row-title">\${m.name}</div><div class="row-sub">\${m.count} domaines</div></div><span class="badge badge-req">Obligatoire</span></div>\`).join('')}
   </div>
-  <button class="btn btn2" onclick="changeUserPin()" style="margin-top:8px">Changer mon code secret</button>
-  <div class="setup"><h3>📱 Installation (30 secondes)</h3><ol>
-    <li><strong>Paramètres</strong> → <strong>Réseau et Internet</strong> → <strong>DNS Privé</strong></li>
-    <li>Nom d'hôte : <code>\${u.hostname}</code></li>
-    <li>Sauvegarder → <strong>Redémarrer le téléphone</strong></li>
-  </ol></div>\`;
+  <div class="card">
+    <div class="card-title">\u2699\uFE0F Catégories optionnelles</div>
+    \${catsHtml}
+  </div>
+  <div class="card">
+    <div class="card-title">\u{1F4A1} Proposer un site à bloquer</div>
+    <input type="text" id="suggestUrl" placeholder="URL du site (ex: exemple.com)">
+    <select id="suggestCat">
+      <option value="" disabled selected>Catégorie du site</option>
+      <option value="adulte">Contenus pour adultes</option>
+      <option value="webcam">Webcams adultes</option>
+      <option value="hentai">Hentai / Comics adultes</option>
+      <option value="ia_nsfw">IA suggestive / NSFW</option>
+      <option value="manga">Manga / Webtoon / Scantrad</option>
+      <option value="gambling">Jeux d\u2019argent / Paris sportifs</option>
+      <option value="search">Moteurs de recherche</option>
+      <option value="ai_mixed">IA mixtes</option>
+      <option value="tor">Tor / Anonymisation</option>
+      <option value="autre">Autre (préciser)</option>
+    </select>
+    <input type="text" id="suggestOther" placeholder="Précise le type de site" style="display:none">
+    <button class="btn" onclick="suggestSite()">Ajouter au filtre</button>
+    <div class="hint" style="text-align:left">Le site sera bloqué immédiatement pour tous les utilisateurs.</div>
+  </div>
+  <button class="btn btn-2 mt" onclick="changeUserPin()">\u{1F511} Changer mon code secret</button>
+  <div class="setup">
+    <h3>\u{1F4F1} Installation (30 secondes)</h3>
+    <ol>
+      <li><strong>Paramètres</strong> \u2192 <strong>Réseau et Internet</strong> \u2192 <strong>DNS Privé</strong></li>
+      <li>Nom d\u2019hôte : <code>\${u.hostname}</code></li>
+      <li>Sauvegarder \u2192 <strong>Redémarrer le téléphone</strong></li>
+    </ol>
+  </div>
+  \`;
 }
 
-function parrainLoginScreen() {
-  return \`<span class="back" onclick="go('home')">← Retour</span>
-  <div class="bx" style="text-align:center">
-    <h3 style="font-size:1rem;margin-bottom:1rem">Je suis parrain</h3>
-    <input type="text" id="pName" placeholder="Mon prénom" />
-    <input type="password" id="pPin" placeholder="Mon code secret" />
+function parrainLoginScreen(){
+  return \`
+  <span class="back" onclick="go('home')">\u2190 Retour</span>
+  <div class="card">
+    <h3 style="margin-bottom:1rem">Espace parrain</h3>
+    <input type="text" id="pName" placeholder="Mon prénom">
+    <input type="password" id="pPin" placeholder="Mon code secret">
     <button class="btn" onclick="parrainLogin()" style="margin-bottom:8px">Accéder</button>
-    <div class="or">— ou —</div>
-    <button class="btn btn2" onclick="go('parrain_invite')">J'ai un code d'invitation</button>
-    <div class="hint" style="margin-top:10px"><a href="mailto:simon.deboeuf.1@gmail.com?subject=FiltresDNS%20-%20PIN%20oubli%C3%A9&body=Bonjour%2C%20j%27ai%20oubli%C3%A9%20mon%20code%20secret%20parrain.%20Mon%20pr%C3%A9nom%20%3A%20" style="color:var(--am);text-decoration:none">PIN oublié ? Contacter l'admin</a></div>
-  </div>\`;
-}
-
-function parrainInviteScreen() {
-  return \`<span class="back" onclick="go('parrain_login')">← Retour</span>
-  <div class="bx" style="text-align:center">
-    <h3 style="font-size:1rem;margin-bottom:1rem">Devenir parrain</h3>
-    <input type="text" id="invCode" placeholder="Code d'invitation (ex: PAUL-7X3K)" style="font-family:'DM Mono';text-align:center;letter-spacing:2px" />
-    <input type="text" id="invName" placeholder="Mon prénom" />
-    <input type="password" id="invPin1" placeholder="Choisis un code secret (4+ chiffres)" />
-    <input type="password" id="invPin2" placeholder="Confirme le code secret" />
-    <button class="btn" onclick="parrainRegister()">Devenir parrain</button>
-  </div>\`;
-}
-
-function parrainDashScreen() {
-  const p = state.parrain;
-  if (!p) return '';
-  return \`<span class="back" onclick="state.parrain=null;go('home')">← Déconnexion</span>
-  <div style="text-align:center;margin-bottom:1rem">
-    <div style="font-size:1.1rem;font-weight:500">\${p.name}</div>
-    <div style="font-size:.78rem;color:var(--tx2)">Espace parrain</div>
+    <div class="or">ou</div>
+    <button class="btn btn-2" onclick="go('parrain_invite')">J\u2019ai un code d\u2019invitation</button>
+    <div class="hint mt"><a href="mailto:simon.deboeuf.1@gmail.com?subject=FiltresDNS%20-%20PIN%20oublié" style="color:var(--warning);text-decoration:none;font-weight:500">PIN oublié ? Contacter l\u2019admin</a></div>
   </div>
-  <div class="st">Mes filleuls</div>
-  \${(p.filleuls||[]).map(f=>\`<div class="cd" style="cursor:pointer" onclick="viewFilleul('\${f.id}')">
-    <div class="inf"><div class="nm">\${f.display_name}</div><div class="ds">\${f.hostname}</div></div>
-    <span style="color:var(--tx2);font-size:.85rem">→</span>
-  </div>\`).join('')||'<div class="hint">Aucun filleul associé pour l\\'instant</div>'}
-  <button class="btn btn2" onclick="go('parrain_invite')" style="margin-top:8px">Ajouter un filleul</button>
-  <button class="btn btn2" onclick="changePin()" style="margin-top:8px">Changer mon code secret</button>
-  <div id="pendingSection" style="margin-top:1rem"></div>\`;
+  \`;
 }
 
-function parrainDetailScreen() {
-  const f = state.filleulDetail;
-  if (!f) return '';
-  let catsHtml = '';
-  for (const [key, cat] of Object.entries(f.categories || {})) {
-    const info = cat.blocked ? (cat.locked_by === 'user' ? 'Activé par le filleul' : 'Activé par toi') : 'Non activé';
-    const excDetail = (cat.exceptions > 0 ? ' \u00b7 ' + cat.exceptions + ' exception(s)' : '') + (cat.pending > 0 ? ' \u00b7 ' + cat.pending + ' en attente' : '');
-    const excDomainList = (cat.exception_domains||[]).length > 0 ? '<div style="font-size:.68rem;color:var(--g);margin-top:3px">' + cat.exception_domains.join(', ') + '</div>' : '';
-    catsHtml += \`<div class="cd">
-      <div class="i">\${CAT_LABELS[key]?.icon||''}</div>
-      <div class="inf"><div class="nm">\${cat.name}</div><div class="ds">\${info}\${excDetail}</div>\${excDomainList}</div>
-      <label class="tg"><input type="checkbox" \${cat.blocked?'checked':''}
-        onchange="parrainToggle('\${key}',this.checked,this)" /><span class="tg-s"></span></label>
+function parrainInviteScreen(){
+  return \`
+  <span class="back" onclick="go('parrain_login')">\u2190 Retour</span>
+  <div class="card">
+    <h3 style="margin-bottom:1rem">Devenir parrain</h3>
+    <input type="text" id="invCode" placeholder="Code d\u2019invitation (ex: PAUL-7X3K)" style="font-family:'JetBrains Mono',monospace;text-align:center;letter-spacing:2px">
+    <input type="text" id="invName" placeholder="Mon prénom">
+    <input type="password" id="invPin1" placeholder="Choisis un code secret (4+)">
+    <input type="password" id="invPin2" placeholder="Confirme le code">
+    <button class="btn" onclick="parrainRegister()">Devenir parrain</button>
+  </div>
+  \`;
+}
+
+function parrainDashScreen(){
+  const p=state.parrain;
+  if(!p)return'';
+  return \`
+  <span class="back" onclick="state.parrain=null;go('home')">\u2190 Déconnexion</span>
+  <div class="card" style="text-align:center">
+    <div style="font-size:2rem;margin-bottom:4px">\u{1F451}</div>
+    <h3 style="font-size:1.1rem">\${p.name}</h3>
+    <div style="font-size:.78rem;color:var(--text-2)">Espace parrain</div>
+  </div>
+  <div class="card">
+    <div class="card-title">\u{1F465} Mes filleuls</div>
+    \${(p.filleuls||[]).map(f=>\`<div class="row" style="cursor:pointer" onclick="viewFilleul('\${f.id}')">
+      <div class="row-icon" style="background:var(--primary-light);color:var(--primary-d);font-weight:700">\${f.display_name[0].toUpperCase()}</div>
+      <div class="row-body"><div class="row-title">\${f.display_name}</div><div class="row-sub">\${f.hostname}</div></div>
+      <span style="color:var(--text-3)">\u2192</span>
+    </div>\`).join('')||'<div class="hint" style="padding:1rem">Aucun filleul associé</div>'}
+    <button class="btn btn-2 mt" onclick="go('parrain_invite')">\u2795 Ajouter un filleul</button>
+  </div>
+  <div id="pendingSection"></div>
+  <button class="btn btn-2 mt" onclick="changePin()">\u{1F511} Changer mon code secret</button>
+  \`;
+}
+
+function parrainDetailScreen(){
+  const f=state.filleulDetail;
+  if(!f)return'';
+  let catsHtml='';
+  for(const[key,cat]of Object.entries(f.categories||{})){
+    const info=cat.blocked?(cat.locked_by==='user'?'Activé par le filleul':'Activé par toi'):'Non activé';
+    const excDetail=(cat.exceptions>0?' · '+cat.exceptions+' exception(s)':'')+(cat.pending>0?' · '+cat.pending+' en attente':'');
+    const excList=(cat.exception_domains||[]).length>0?'<div class="row-sub-accent">'+cat.exception_domains.join(', ')+'</div>':'';
+    catsHtml+=\`<div class="row">
+      <div class="row-icon">\${CAT_LABELS[key]?.icon||''}</div>
+      <div class="row-body"><div class="row-title">\${cat.name}</div><div class="row-sub">\${info}\${excDetail}</div>\${excList}</div>
+      <label class="tg"><input type="checkbox" \${cat.blocked?'checked':''} onchange="parrainToggle('\${key}',this.checked,this)"><span class="tg-s"></span></label>
     </div>\`;
   }
-  const pct = f.stats.total > 0 ? ((f.stats.blocked/f.stats.total)*100).toFixed(1) : '0';
-  return \`<span class="back" onclick="go('parrain_dashboard')">← Retour</span>
-  <div style="text-align:center;margin-bottom:1rem">
-    <div style="font-size:1.1rem;font-weight:500">\${f.name}</div>
-    <div style="font-family:'DM Mono';font-size:.85rem;color:var(--g)">\${f.hostname}</div>
+  const pct=f.stats.total>0?((f.stats.blocked/f.stats.total)*100).toFixed(1):'0';
+  return \`
+  <span class="back" onclick="go('parrain_dashboard')">\u2190 Retour</span>
+  <div class="card" style="text-align:center">
+    <div style="font-size:2rem;margin-bottom:4px">\u{1F464}</div>
+    <h3 style="font-size:1.1rem">\${f.name}</h3>
+    <span class="host">\${f.hostname}</span>
   </div>
   <div class="stats">
-    <div class="stat"><div class="n">\${f.stats.blocked.toLocaleString()}</div><div class="l">Bloquées</div></div>
-    <div class="stat"><div class="n">\${f.stats.total.toLocaleString()}</div><div class="l">Total</div></div>
-    <div class="stat"><div class="n">\${pct}%</div><div class="l">Taux</div></div>
+    <div class="stat"><div class="stat-n">\${f.stats.blocked.toLocaleString()}</div><div class="stat-l">Bloquées</div></div>
+    <div class="stat"><div class="stat-n">\${f.stats.total.toLocaleString()}</div><div class="stat-l">Total</div></div>
+    <div class="stat"><div class="stat-n">\${pct}%</div><div class="stat-l">Taux</div></div>
   </div>
-  <div class="st">Catégories obligatoires</div>
-  \${f.mandatory.map(m=>\`<div class="cd"><div class="i">\${m.icon}</div><div class="inf"><div class="nm">\${m.name}</div></div><span class="badge badge-r">Obligatoire</span></div>\`).join('')}
-  <div style="margin-top:1rem"><div class="st">Catégories optionnelles</div>\${catsHtml}</div>
-  <button class="btn btn2" onclick="revokeFilleul('\${f.id}','\${f.name}')" style="margin-top:1rem;color:var(--r)">Se retirer comme parrain</button>\`;
+  <div class="card">
+    <div class="card-title">\u{1F512} Obligatoires</div>
+    \${f.mandatory.map(m=>\`<div class="row"><div class="row-icon">\${m.icon}</div><div class="row-body"><div class="row-title">\${m.name}</div></div><span class="badge badge-req">Obligatoire</span></div>\`).join('')}
+  </div>
+  <div class="card">
+    <div class="card-title">\u2699\uFE0F Catégories optionnelles</div>
+    \${catsHtml}
+  </div>
+  <button class="btn btn-danger mt" onclick="revokeFilleul('\${f.id}','\${f.name}')">Se retirer comme parrain</button>
+  \`;
 }
 
-const CAT_LABELS = ${JSON.stringify(CAT_LABELS)};
+const CAT_LABELS=${JSON.stringify(CAT_LABELS)};
 
-function go(screen) { state.screen = screen; render(); if(screen==='parrain_dashboard')setTimeout(loadPending,100); }
+function go(screen){state.screen=screen;render();if(screen==='parrain_dashboard')setTimeout(loadPending,100)}
 
-async function registerUser() {
-  const name = $('regName')?.value?.trim();
-  if (!name) return alert('Remplis ton prénom');
-  const pin1 = $('regPin1')?.value;
-  const pin2 = $('regPin2')?.value;
-  if (!pin1 || pin1.length < 4) return alert('Code secret requis (4 chiffres minimum)');
-  if (pin1 !== pin2) return alert('Les codes ne correspondent pas');
-  const res = await fetch(API+'/register', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({name,pin:pin1}) });
-  const data = await res.json();
-  if (data.error) { alert(data.error + (data.suggestion ? ' → '+data.suggestion : '')); return; }
-  localStorage.setItem('fdns_id', data.id);
-  await new Promise(r => setTimeout(r, 500));
-  const pRes = await fetch(API+'/profile?id='+data.id);
-  state.user = await pRes.json();
-  hideLoader();
-  go('profile');
-}
+function logout(){state.user=null;localStorage.removeItem('fdns_id');localStorage.removeItem('fdns_pin');go('home')}
 
-async function loginUser() {
-  const id = $('loginId')?.value?.trim()?.toLowerCase();
-  const pin = $('loginPin')?.value || '';
-  if (!id) return alert('Entre ton identifiant');
+async function registerUser(){
+  const name=$('regName')?.value?.trim();
+  if(!name)return toast('Remplis ton prénom','error');
+  const pin1=$('regPin1')?.value;
+  const pin2=$('regPin2')?.value;
+  if(!pin1||pin1.length<4)return toast('Code secret requis (4 chiffres mini)','error');
+  if(pin1!==pin2)return toast('Les codes ne correspondent pas','error');
   showLoader();
-  try {
-    const authRes = await fetch(API+'/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id,pin})});
-    const authData = await authRes.json();
-    if (authData.error) { hideLoader(); alert(authData.error); return; }
-    if (authData.needs_pin && !pin) { hideLoader(); alert('Pas de code secret sur ce compte. D\u00e9finis-en un apr\u00e8s connexion.'); }
-    const res = await fetch(API+'/profile?id='+id);
-    const data = await res.json();
-    if (data.error) { hideLoader(); alert(data.error); return; }
-    state.user = data;
-    localStorage.setItem('fdns_id', id);
-    localStorage.setItem('fdns_pin', pin);
+  try{
+    const res=await fetch(API+'/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,pin:pin1})});
+    const data=await res.json();
+    if(data.error){hideLoader();toast(data.error+(data.suggestion?' \u2192 '+data.suggestion:''),'error');return;}
+    localStorage.setItem('fdns_id',data.id);
+    localStorage.setItem('fdns_pin',pin1);
+    await new Promise(r=>setTimeout(r,300));
+    const pRes=await fetch(API+'/profile?id='+data.id);
+    state.user=await pRes.json();
+    hideLoader();
+    toast('Profil créé !','success');
+    go('profile');
+  }catch(e){hideLoader();toast('Erreur : '+e.message,'error');}
+}
+
+async function loginUser(){
+  const id=$('loginId')?.value?.trim()?.toLowerCase();
+  const pin=$('loginPin')?.value||'';
+  if(!id)return toast('Entre ton identifiant','error');
+  showLoader();
+  try{
+    const authRes=await fetch(API+'/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id,pin})});
+    const authData=await authRes.json();
+    if(authData.error){hideLoader();toast(authData.error,'error');return;}
+    const res=await fetch(API+'/profile?id='+id);
+    const data=await res.json();
+    if(data.error){hideLoader();toast(data.error,'error');return;}
+    state.user=data;
+    localStorage.setItem('fdns_id',id);
+    localStorage.setItem('fdns_pin',pin);
     hideLoader();
     go('profile');
-  } catch(e) { hideLoader(); alert('Erreur : '+e.message); }
+  }catch(e){hideLoader();toast('Erreur : '+e.message,'error');}
 }
 
-function userToggle(cat, el) {
-  el.checked = false;
-  pendingAction = { type: 'user_toggle', cat, el };
-  $('confirmTitle').textContent = 'Activer le blocage ?';
-  $('confirmMsg').textContent = CAT_LABELS[cat].name + ' sera bloqué. Seul ton parrain pourra le débloquer.';
+async function changeUserPin(){
+  var old=prompt('Ancien code secret (vide si premier code) :');
+  if(old===null)return;
+  var nw=prompt('Nouveau code secret (4+ chiffres) :');
+  if(!nw||nw.length<4)return toast('Code trop court','error');
+  var nw2=prompt('Confirme le nouveau code :');
+  if(nw!==nw2)return toast('Les codes ne correspondent pas','error');
+  showLoader();
+  try{
+    const res=await fetch(API+'/change-pin',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({user_id:state.user.id,old_pin:old,new_pin:nw})});
+    const data=await res.json();hideLoader();
+    if(data.error){toast(data.error,'error');return;}
+    localStorage.setItem('fdns_pin',nw);
+    toast('Code secret mis à jour !','success');
+  }catch(e){hideLoader();toast('Erreur : '+e.message,'error');}
+}
+
+function userToggle(cat,el){
+  el.checked=false;
+  pendingAction={type:'user_toggle',cat,el};
+  $('confirmTitle').textContent='Activer le blocage ?';
+  $('confirmMsg').textContent=CAT_LABELS[cat].name+' sera bloqué. Seul ton parrain pourra le débloquer.';
   $('confirmPin').classList.add('hidden');
-  $('confirmBtn').classList.remove('btn-r');
+  $('confirmBtn').classList.remove('btn-danger');
   $('confirmModal').classList.add('show');
 }
 
-async function confirmAction() {
-  // IMPORTANT: read PIN value BEFORE closing modal (which clears it)
-  const pinValue = $('confirmPin') ? $('confirmPin').value : '';
+async function confirmAction(){
+  const pinValue=$('confirmPin')?$('confirmPin').value:'';
   closeModal();
-  if (!pendingAction) return;
-  const a = pendingAction;
-  pendingAction = null;
-
-  if (a.type === 'user_toggle') {
-    const res = await fetch(API+'/toggle', { method:'POST', headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({ user_id: state.user.id, category: a.cat }) });
-    const data = await res.json();
-    if (data.error) { alert(data.error); return; }
-    await new Promise(r => setTimeout(r, 300));
-    const pRes = await fetch(API+'/profile?id='+state.user.id);
-    state.user = await pRes.json();
-    go('profile');
-  }
-
-  if (a.type === 'parrain_toggle') {
-    if (!pinValue) { alert('Code secret requis'); return; }
-    const res = await fetch(API+'/parrain/toggle', { method:'POST', headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({ parrain_id: state.parrain.parrain_id, pin: pinValue, user_id: state.filleulDetail.id, category: a.cat, blocked: a.blocked }) });
-    const data = await res.json();
-    if (data.error) { alert(data.error); return; }
-    await viewFilleul(state.filleulDetail.id);
-  }
+  if(!pendingAction)return;
+  const a=pendingAction;pendingAction=null;
+  showLoader();
+  try{
+    if(a.type==='user_toggle'){
+      const res=await fetch(API+'/toggle',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({user_id:state.user.id,category:a.cat})});
+      const data=await res.json();
+      if(data.error){hideLoader();toast(data.error,'error');return;}
+      await new Promise(r=>setTimeout(r,300));
+      const pRes=await fetch(API+'/profile?id='+state.user.id);
+      state.user=await pRes.json();
+      hideLoader();
+      toast('Blocage activé','success');
+      go('profile');
+    }
+    if(a.type==='parrain_toggle'){
+      if(!pinValue){hideLoader();toast('Code secret requis','error');return;}
+      const res=await fetch(API+'/parrain/toggle',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({parrain_id:state.parrain.parrain_id,pin:pinValue,user_id:state.filleulDetail.id,category:a.cat,blocked:a.blocked})});
+      const data=await res.json();
+      if(data.error){hideLoader();toast(data.error,'error');return;}
+      await viewFilleul(state.filleulDetail.id);
+      hideLoader();
+      toast('Mis à jour','success');
+    }
+  }catch(e){hideLoader();toast('Erreur : '+e.message,'error');}
 }
 
-function parrainToggle(cat, blocked, el) {
-  el.checked = !blocked;
-  const action = blocked ? 'activer le blocage de' : 'désactiver le blocage de';
-  pendingAction = { type: 'parrain_toggle', cat, blocked };
-  $('confirmTitle').textContent = 'Confirmation requise';
-  $('confirmMsg').textContent = 'Tu vas ' + action + ' "' + CAT_LABELS[cat].name + '" pour ' + state.filleulDetail.name + '. Entre ton code secret pour confirmer.';
+function parrainToggle(cat,blocked,el){
+  el.checked=!blocked;
+  const action=blocked?'activer le blocage de':'désactiver le blocage de';
+  pendingAction={type:'parrain_toggle',cat,blocked};
+  $('confirmTitle').textContent='Confirmation requise';
+  $('confirmMsg').textContent='Tu vas '+action+' "'+CAT_LABELS[cat].name+'" pour '+state.filleulDetail.name+'.';
   $('confirmPin').classList.remove('hidden');
-  $('confirmPin').value = '';
-  $('confirmBtn').classList.toggle('btn-r', !blocked);
+  $('confirmPin').value='';
+  $('confirmBtn').classList.toggle('btn-danger',!blocked);
   $('confirmModal').classList.add('show');
-  setTimeout(() => $('confirmPin').focus(), 100);
+  setTimeout(()=>$('confirmPin').focus(),100);
 }
 
-function closeModal() { $('confirmModal').classList.remove('show'); }
+function closeModal(){$('confirmModal').classList.remove('show')}
 
-async function suggestSite() {
-  const urlInput = $('suggestUrl');
-  const catSelect = $('suggestCat');
-  const otherInput = $('suggestOther');
-  if (!urlInput || !catSelect) return;
-  const url = urlInput.value.trim();
-  const cat = catSelect.value;
-  const other = otherInput?.value?.trim() || '';
-  if (!url) return alert('Entre une URL');
-  if (!cat) return alert('Choisis une catégorie');
-  if (cat === 'autre' && !other) return alert('Précise le type de site');
-
-  const res = await fetch(API+'/suggest', { method:'POST', headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({ user_id: state.user.id, url, category: cat, category_other: other }) });
-  const data = await res.json();
-  if (data.error) { alert(data.error); return; }
-  alert(data.domain + ' a été ajouté au filtre !');
-  urlInput.value = '';
-  catSelect.value = '';
-  if (otherInput) { otherInput.value = ''; otherInput.style.display = 'none'; }
+async function suggestSite(){
+  const urlInput=$('suggestUrl');
+  const catSelect=$('suggestCat');
+  const otherInput=$('suggestOther');
+  if(!urlInput||!catSelect)return;
+  const url=urlInput.value.trim();
+  const cat=catSelect.value;
+  const other=otherInput?.value?.trim()||'';
+  if(!url)return toast('Entre une URL','error');
+  if(!cat)return toast('Choisis une catégorie','error');
+  if(cat==='autre'&&!other)return toast('Précise le type','error');
+  showLoader();
+  try{
+    const res=await fetch(API+'/suggest',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({user_id:state.user.id,url,category:cat,category_other:other})});
+    const data=await res.json();hideLoader();
+    if(data.error){toast(data.error,'error');return;}
+    toast(data.domain+' ajouté !','success');
+    urlInput.value='';catSelect.value='';
+    if(otherInput){otherInput.value='';otherInput.style.display='none';}
+  }catch(e){hideLoader();toast('Erreur : '+e.message,'error');}
 }
 
-document.addEventListener('change', function(e) {
-  if (e.target.id === 'suggestCat') {
-    const otherInput = $('suggestOther');
-    if (otherInput) otherInput.style.display = e.target.value === 'autre' ? 'block' : 'none';
+document.addEventListener('change',function(e){
+  if(e.target.id==='suggestCat'){
+    const otherInput=$('suggestOther');
+    if(otherInput)otherInput.style.display=e.target.value==='autre'?'block':'none';
   }
 });
 
-async function parrainLogin() {
-  const name = $('pName')?.value?.trim();
-  const pin = $('pPin')?.value;
-  if (!name || !pin) return alert('Remplis tout');
-  const res = await fetch(API+'/parrain/login', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({name,pin}) });
-  const data = await res.json();
-  if (data.error) { alert(data.error); return; }
-  state.parrain = data;
-  go('parrain_dashboard');
+async function parrainLogin(){
+  const name=$('pName')?.value?.trim();
+  const pin=$('pPin')?.value;
+  if(!name||!pin)return toast('Remplis tout','error');
+  showLoader();
+  try{
+    const res=await fetch(API+'/parrain/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,pin})});
+    const data=await res.json();hideLoader();
+    if(data.error){toast(data.error,'error');return;}
+    state.parrain=data;
+    go('parrain_dashboard');
+  }catch(e){hideLoader();toast('Erreur : '+e.message,'error');}
 }
 
-async function parrainRegister() {
-  const code = $('invCode')?.value?.trim();
-  const name = $('invName')?.value?.trim();
-  const pin1 = $('invPin1')?.value;
-  const pin2 = $('invPin2')?.value;
-  if (!code || !name || !pin1) return alert('Remplis tout');
-  if (pin1 !== pin2) return alert('Les codes ne correspondent pas');
-  if (pin1.length < 4) return alert('Code secret trop court (4 chiffres minimum)');
-  const res = await fetch(API+'/parrain/register', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({invite_code:code,name,pin:pin1}) });
-  const data = await res.json();
-  if (data.error) { alert(data.error); return; }
-  alert('Tu es maintenant parrain de ' + data.filleul + ' !');
-  const lRes = await fetch(API+'/parrain/login', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({name,pin:pin1}) });
-  state.parrain = await lRes.json();
-  go('parrain_dashboard');
+async function parrainRegister(){
+  const code=$('invCode')?.value?.trim();
+  const name=$('invName')?.value?.trim();
+  const pin1=$('invPin1')?.value;
+  const pin2=$('invPin2')?.value;
+  if(!code||!name||!pin1)return toast('Remplis tout','error');
+  if(pin1!==pin2)return toast('Les codes ne correspondent pas','error');
+  if(pin1.length<4)return toast('Code trop court','error');
+  showLoader();
+  try{
+    const res=await fetch(API+'/parrain/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({invite_code:code,name,pin:pin1,current_user_id:localStorage.getItem('fdns_id')||''})});
+    const data=await res.json();
+    if(data.error){hideLoader();toast(data.error,'error');return;}
+    toast('Parrain de '+data.filleul+' !','success');
+    const lRes=await fetch(API+'/parrain/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,pin:pin1})});
+    state.parrain=await lRes.json();hideLoader();
+    go('parrain_dashboard');
+  }catch(e){hideLoader();toast('Erreur : '+e.message,'error');}
 }
 
-async function viewFilleul(userId) {
-  const res = await fetch(API+'/parrain/filleul?parrain_id='+state.parrain.parrain_id+'&user_id='+userId);
-  state.filleulDetail = await res.json();
-  go('parrain_detail');
+async function viewFilleul(userId){
+  showLoader();
+  try{
+    const res=await fetch(API+'/parrain/filleul?parrain_id='+state.parrain.parrain_id+'&user_id='+userId);
+    state.filleulDetail=await res.json();hideLoader();
+    go('parrain_detail');
+  }catch(e){hideLoader();toast('Erreur : '+e.message,'error');}
 }
 
-async function changePin() {
-  const old = prompt('Ancien code secret :');
-  if (!old) return;
-  const nw = prompt('Nouveau code secret (4+ chiffres) :');
-  if (!nw || nw.length < 4) return alert('Code trop court');
-  const nw2 = prompt('Confirme le nouveau code :');
-  if (nw !== nw2) return alert('Les codes ne correspondent pas');
-  const res = await fetch(API+'/parrain/change-pin', { method:'POST', headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({ parrain_id: state.parrain.parrain_id, old_pin: old, new_pin: nw }) });
-  const data = await res.json();
-  if (data.error) alert(data.error); else alert('Code secret changé !');
-}
-
-function copyInvite() {
-  if (state.user?.invite_code) navigator.clipboard.writeText(state.user.invite_code);
+async function changePin(){
+  const old=prompt('Ancien code secret :');
+  if(!old)return;
+  const nw=prompt('Nouveau code secret (4+ chiffres) :');
+  if(!nw||nw.length<4)return toast('Code trop court','error');
+  const nw2=prompt('Confirme :');
+  if(nw!==nw2)return toast('Les codes ne correspondent pas','error');
+  showLoader();
+  try{
+    const res=await fetch(API+'/parrain/change-pin',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({parrain_id:state.parrain.parrain_id,old_pin:old,new_pin:nw})});
+    const data=await res.json();hideLoader();
+    if(data.error)toast(data.error,'error');else toast('Code changé !','success');
+  }catch(e){hideLoader();toast('Erreur : '+e.message,'error');}
 }
 
 async function openExceptions(category){
@@ -1075,71 +1256,57 @@ async function openExceptions(category){
   try{
     const res=await fetch(API+'/category-domains?user_id='+state.user.id+'&category='+category);
     const data=await res.json();excDomains=data.domains||[];hideLoader();
-    document.getElementById('excTitle').textContent='Exceptions \u2014 '+CAT_LABELS[category].name;
-    renderExcDomains();document.getElementById('excModal').classList.add('show');
-    document.getElementById('excSearch').value='';
-  }catch(e){hideLoader();alert('Erreur : '+e.message);}
+    $('excTitle').textContent='Exceptions \u2014 '+CAT_LABELS[category].name;
+    renderExcDomains();$('excModal').classList.add('show');
+    $('excSearch').value='';
+  }catch(e){hideLoader();toast('Erreur : '+e.message,'error');}
 }
+
 function renderExcDomains(){
-  const search=(document.getElementById('excSearch')?.value||'').toLowerCase();
+  const search=($('excSearch')?.value||'').toLowerCase();
   const filtered=excDomains.filter(d=>d.domain.includes(search));
-  const list=document.getElementById('excList');
-  if(filtered.length===0){list.innerHTML='<div class="hint" style="padding:12px">Aucun domaine trouv\u00e9</div>';return;}
+  const list=$('excList');
+  if(filtered.length===0){list.innerHTML='<div class="hint" style="padding:1rem">Aucun domaine</div>';return;}
   list.innerHTML=filtered.map(d=>{
     var cls=d.excepted?'excepted':(d.pending?'pending':'');
     var status=d.pending?' (en attente)':'';
-    var disabled=d.pending?' disabled':'';
-    return '<div class="exc-item"><span class="domain '+cls+'">'+d.domain+status+'</span><label class="tg"><input type="checkbox" '+(d.excepted?'checked':'')+(d.pending?' checked disabled':'')+disabled+' onchange="toggleException(\\''+d.domain+'\\',this.checked)" /><span class="tg-s"></span></label></div>';
+    var dis=d.pending?' disabled':'';
+    return '<div class="exc-item"><span class="exc-dom '+cls+'">'+d.domain+status+'</span><label class="tg"><input type="checkbox" '+(d.excepted?'checked':'')+(d.pending?' checked disabled':'')+dis+' onchange="toggleException(\\''+d.domain+'\\',this.checked)"><span class="tg-s"></span></label></div>';
   }).join('');
 }
+
 function filterExcDomains(){renderExcDomains()}
+
 async function toggleException(domain,excepted){
   showLoader();
   try{
     const res=await fetch(API+'/exception',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({user_id:state.user.id,category:excCategory,domain,excepted})});
     const data=await res.json();
-    if(data.error){hideLoader();alert(data.error);return;}
+    if(data.error){hideLoader();toast(data.error,'error');return;}
     if(data.pending){
       const d=excDomains.find(x=>x.domain===domain);if(d){d.pending=true;d.excepted=false;}
-      const deps=(data.dependencies||[]);
+      const deps=data.dependencies||[];
       for(const dep of deps){const dd=excDomains.find(x=>x.domain===dep);if(dd){dd.pending=true;dd.excepted=false;}}
       renderExcDomains();hideLoader();
-      alert('Demande envoy\u00e9e \u00e0 ton parrain. L\u2019exception sera active apr\u00e8s approbation.');
-      return;
+      toast('Demande envoyée au parrain','success');return;
     }
     const d=excDomains.find(x=>x.domain===domain);if(d){d.excepted=false;d.pending=false;}
     renderExcDomains();
     const prRes=await fetch(API+'/profile?id='+state.user.id);state.user=await prRes.json();hideLoader();
-  }catch(e){hideLoader();alert('Erreur : '+e.message);}
+  }catch(e){hideLoader();toast('Erreur : '+e.message,'error');}
 }
-function closeExcModal(){document.getElementById('excModal').classList.remove('show');go('profile')}
 
-async function changeUserPin(){
-  var old=prompt('Ancien code secret (vide si premier code) :');
-  if(old===null)return;
-  var nw=prompt('Nouveau code secret (4+ chiffres) :');
-  if(!nw||nw.length<4)return alert('Code trop court');
-  var nw2=prompt('Confirme le nouveau code :');
-  if(nw!==nw2)return alert('Les codes ne correspondent pas');
-  showLoader();
-  try{
-    const res=await fetch(API+'/change-pin',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({user_id:state.user.id,old_pin:old,new_pin:nw})});
-    const data=await res.json();hideLoader();
-    if(data.error){alert(data.error);return;}
-    localStorage.setItem('fdns_pin',nw);
-    alert('Code secret mis \u00e0 jour !');
-  }catch(e){hideLoader();alert('Erreur : '+e.message);}
-}
+function closeExcModal(){$('excModal').classList.remove('show');go('profile')}
 
 async function loadPending(){
   if(!state.parrain)return;
   try{
     const res=await fetch(API+'/parrain/pending?parrain_id='+state.parrain.parrain_id);
     const data=await res.json();
-    const el=document.getElementById('pendingSection');
+    const el=$('pendingSection');
     if(!el)return;
     if(!data.pending||data.pending.length===0){el.innerHTML='';return;}
-    el.innerHTML='<div class="st">Demandes en attente</div><div class="hint" style="text-align:left;margin-bottom:6px">Les domaines li\u00e9s (ex: apis.naver.com pour Webtoon) sont automatiquement inclus.</div>'+data.pending.map(p=>'<div class="cd" style="flex-wrap:wrap"><div class="inf"><div class="nm">'+p.user_name+' : '+p.domain+'</div><div class="ds">'+(p.category||'?')+'</div></div><div style="display:flex;gap:6px"><button class="btn" style="width:auto;padding:6px 14px;font-size:.78rem" onclick="approvePending(\\''+p.user_id+'\\',\\''+p.category+'\\',\\''+p.domain+'\\',true)">Approuver</button><button class="btn btn-r" style="width:auto;padding:6px 14px;font-size:.78rem" onclick="approvePending(\\''+p.user_id+'\\',\\''+p.category+'\\',\\''+p.domain+'\\',false)">Refuser</button></div></div>').join('');
+    el.innerHTML='<div class="card"><div class="card-title">\u23F3 Demandes en attente</div><div class="hint" style="text-align:left;margin-bottom:10px">Les domaines liés (ex: apis.naver.com pour Webtoon) sont inclus auto.</div>'+data.pending.map(p=>'<div class="row" style="flex-wrap:wrap"><div class="row-icon">\u{1F4E5}</div><div class="row-body"><div class="row-title">'+p.user_name+' : '+p.domain+'</div><div class="row-sub">'+(p.category||'?')+'</div></div><div style="display:flex;gap:6px;width:100%;margin-top:8px"><button class="btn" style="width:auto;padding:8px 14px;font-size:.78rem;flex:1" onclick="approvePending(\\''+p.user_id+'\\',\\''+p.category+'\\',\\''+p.domain+'\\',true)">Approuver</button><button class="btn btn-danger" style="width:auto;padding:8px 14px;font-size:.78rem;flex:1" onclick="approvePending(\\''+p.user_id+'\\',\\''+p.category+'\\',\\''+p.domain+'\\',false)">Refuser</button></div></div>').join('')+'</div>';
   }catch(e){}
 }
 
@@ -1149,49 +1316,48 @@ async function approvePending(userId,category,domain,approved){
   showLoader();
   try{
     const res=await fetch(API+'/parrain/approve',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({parrain_id:state.parrain.parrain_id,pin:pin,user_id:userId,category:category,domain:domain,approved:approved})});
-    const data=await res.json();
-    hideLoader();
-    if(data.error){alert(data.error);return;}
-    alert(approved?'Exception approuv\u00e9e !':'Demande refus\u00e9e.');
+    const data=await res.json();hideLoader();
+    if(data.error){toast(data.error,'error');return;}
+    toast(approved?'Approuvée !':'Refusée','success');
     loadPending();
-  }catch(e){hideLoader();alert('Erreur : '+e.message);}
+  }catch(e){hideLoader();toast('Erreur : '+e.message,'error');}
 }
 
 async function revokeFilleul(userId,userName){
   if(!confirm('Tu ne seras plus parrain de '+userName+'. Continuer ?'))return;
-  var pin=prompt('Code secret pour confirmer :');
+  var pin=prompt('Code secret :');
   if(!pin)return;
   showLoader();
   try{
     const res=await fetch(API+'/parrain/revoke-filleul',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({parrain_id:state.parrain.parrain_id,pin:pin,user_id:userId})});
     const data=await res.json();hideLoader();
-    if(data.error){alert(data.error);return;}
-    alert('Parrain retir\u00e9 pour '+userName);
+    if(data.error){toast(data.error,'error');return;}
+    toast('Parrain retiré pour '+userName,'success');
     const lRes=await fetch(API+'/parrain/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:state.parrain.name,pin:pin})});
     state.parrain=await lRes.json();go('parrain_dashboard');
-  }catch(e){hideLoader();alert('Erreur : '+e.message);}
+  }catch(e){hideLoader();toast('Erreur : '+e.message,'error');}
 }
 
-const savedId = localStorage.getItem('fdns_id');
-const savedPin = localStorage.getItem('fdns_pin');
-if (savedId) {
+const savedId=localStorage.getItem('fdns_id');
+const savedPin=localStorage.getItem('fdns_pin');
+if(savedId){
   fetch(API+'/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:savedId,pin:savedPin||''})}).then(r=>r.json()).then(auth=>{
     if(auth.error){localStorage.removeItem('fdns_id');localStorage.removeItem('fdns_pin');render();return;}
     return fetch(API+'/profile?id='+savedId).then(r=>r.json()).then(d=>{
       if(!d.error){state.user=d;go('profile')}else{localStorage.removeItem('fdns_id');localStorage.removeItem('fdns_pin');render()}
     });
   }).catch(()=>render());
-} else render();
+}else render();
 
-document.addEventListener('keydown', function(e) {
-  if (e.key !== 'Enter') return;
-  const id = e.target.id;
-  if (id === 'regName' || id === 'regPin1' || id === 'regPin2') registerUser();
-  if (id === 'loginId' || id === 'loginPin') loginUser();
-  if (id === 'pName' || id === 'pPin') parrainLogin();
-  if (id === 'invCode' || id === 'invName' || id === 'invPin1' || id === 'invPin2') parrainRegister();
-  if (id === 'confirmPin') confirmAction();
-  if (id === 'suggestUrl') suggestSite();
+document.addEventListener('keydown',function(e){
+  if(e.key!=='Enter')return;
+  const id=e.target.id;
+  if(id==='regName'||id==='regPin1'||id==='regPin2')registerUser();
+  if(id==='loginId'||id==='loginPin')loginUser();
+  if(id==='pName'||id==='pPin')parrainLogin();
+  if(id==='invCode'||id==='invName'||id==='invPin1'||id==='invPin2')parrainRegister();
+  if(id==='confirmPin')confirmAction();
+  if(id==='suggestUrl')suggestSite();
 });
 </script>
 </body>
