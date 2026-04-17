@@ -375,12 +375,15 @@ async function handleAPI(request, url, env) {
       await db.prepare('INSERT INTO suggestions (user_id, url, category, category_other) VALUES (?, ?, ?, ?)')
         .bind(user_id, domain, category || 'autre', category_other || null).run();
 
+      const catLabelsMap = { adulte:'Contenus pour adultes', webcam:'Webcams adultes', hentai:'Hentai / Comics adultes', ia_nsfw:'IA suggestive / NSFW', manga:'Manga / Webtoon / Scantrad', gambling:"Jeux d'argent / Paris sportifs", search:'Moteurs de recherche', ai_mixed:'IA mixtes', tor:'Tor / Anonymisation', autre:'Autre' };
+      const catLabel = catLabelsMap[category] || category || 'Autre';
+      const commentLine = `# Ajout\u00e9 par ${user_id} le ${new Date().toISOString().split('T')[0]} - ${catLabel}${category_other ? ' (' + category_other + ')' : ''}`;
       const adguardRule = `||${domain}^`;
       try {
         const data = await agFetch(env, '/control/filtering/status');
         let rules = data.user_rules || [];
         if (!rules.includes(adguardRule)) {
-          rules.push(`# Ajouté par ${user_id} le ${new Date().toISOString().split('T')[0]}`);
+          rules.push(commentLine);
           rules.push(adguardRule);
           await agFetch(env, '/control/filtering/set_rules', 'POST', { rules });
         }
@@ -857,6 +860,7 @@ function homeScreen(){
     <input type="text" id="loginId" placeholder="Identifiant (ex: paul)">
     <input type="password" id="loginPin" placeholder="Code secret">
     <button class="btn btn-2" onclick="loginUser()">Se connecter</button>
+    <div class="hint mt"><a href="mailto:simon.deboeuf.1@gmail.com?subject=PIN%20Filleul%20perdu%20-%20FiltreDNS&body=Bonjour%2C%0A%0AJ%27ai%20perdu%20mon%20code%20secret%20filleul.%0A%0AMon%20identifiant%20%3A%20%0A%0AMerci%20de%20m%27aider%20%C3%A0%20le%20r%C3%A9cup%C3%A9rer." style="color:var(--warning);text-decoration:underline;font-weight:500;cursor:pointer">PIN oublié ? Me contacter</a></div>
   </div>
   <div class="hint" style="margin-top:1rem;padding:0 1rem">\u{1F4AC} Des idées, un bug ou autres choses, n\u2019hésites pas à m\u2019en faire part :)</div>
   \`;
@@ -961,7 +965,7 @@ function parrainLoginScreen(){
     <button class="btn" onclick="parrainLogin()" style="margin-bottom:8px">Accéder</button>
     <div class="or">ou</div>
     <button class="btn btn-2" onclick="go('parrain_invite')">J\u2019ai un code d\u2019invitation</button>
-    <div class="hint mt"><a href="mailto:simon.deboeuf.1@gmail.com?subject=FiltresDNS%20-%20PIN%20oublié" style="color:var(--warning);text-decoration:none;font-weight:500">PIN oublié ? Contacter l\u2019admin</a></div>
+    <div class="hint mt"><a href="mailto:simon.deboeuf.1@gmail.com?subject=PIN%20Parrain%20perdu%20-%20FiltreDNS&body=Bonjour%2C%0A%0AJ%27ai%20perdu%20mon%20code%20secret%20parrain.%0A%0AMon%20pr%C3%A9nom%20parrain%20%3A%20%0AMon%20filleul%20%3A%20%0A%0AMerci%20de%20m%27aider%20%C3%A0%20le%20r%C3%A9cup%C3%A9rer." style="color:var(--warning);text-decoration:underline;font-weight:500;cursor:pointer">PIN oublié ? Me contacter</a></div>
   </div>
   \`;
 }
