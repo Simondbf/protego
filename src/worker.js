@@ -1029,8 +1029,7 @@ function profileScreen(){
   <div class="card-title">\u{1F308} Apparence</div>
   <div class="row">
     <div class="row-body">
-      <div class="row-title">Mode sombre</div>
-      <div class="row-sub">Interface plus reposante la nuit</div>
+      <div class="row-title">Mode clair</div>
     </div>
     <label class="tg">
       <input type="checkbox" id="darkModeToggle" onchange="toggleDarkMode(this.checked)">
