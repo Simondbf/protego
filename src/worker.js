@@ -75,6 +75,28 @@ function jsonRes(data, status = 200) {
   });
 }
 
+// ── Email via Resend ────────────────────────────────────────
+async function sendEmail(env, to, subject, htmlBody, replyTo = null) {
+  try {
+    const payload = {
+      from: env.RESEND_FROM || 'FiltresDNS <filtredns@rpisimon.uk>',
+      to: [to],
+      subject,
+      html: htmlBody
+    };
+    if (replyTo) payload.reply_to = replyTo;
+    const res = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    return res.ok;
+  } catch (e) {
+    console.error('Email error:', e);
+    return false;
+  }
+}
+
 // ── AdGuard Home API ─────────────────────────────────────────
 
 async function agFetch(env, path, method = 'GET', body = null) {
@@ -593,6 +615,27 @@ async function handleAPI(request, url, env) {
       await db.prepare('UPDATE users SET parrain_id = NULL, invite_code = ? WHERE id = ?').bind(newInvite, user_id).run();
       return jsonRes({ ok: true });
     }
+    // ── Récupération PIN (filleul ou parrain) ──
+    if (url.pathname === '/api/forgot-pin' && request.method === 'POST') {
+      const { type, name, contact } = await request.json();
+      if (!type || !name || !contact) return jsonRes({ error: 'Champs requis' }, 400);
+      const subject = type === 'filleul' ? 'PIN Filleul perdu - FiltreDNS' : 'PIN Parrain perdu - FiltreDNS';
+      const htmlBody = `
+        <div style="font-family:sans-serif;padding:20px">
+          <h2>Demande de récupération de PIN</h2>
+          <p><strong>Type :</strong> ${type === 'filleul' ? 'Filleul' : 'Parrain'}</p>
+          <p><strong>Nom / identifiant :</strong> ${name}</p>
+          <p><strong>Contact :</strong> ${contact}</p>
+          <hr>
+          <p style="font-size:12px;color:#666">Envoyé automatiquement depuis FiltreDNS</p>
+        </div>
+      `;
+      let replyTo = null;
+      if (contact && contact.includes('@') && contact.includes('.')) replyTo = contact;
+      const ok = await sendEmail(env, 'simon.deboeuf.1@gmail.com', subject, htmlBody, replyTo);
+      if (!ok) return jsonRes({ error: 'Échec envoi email' }, 500);
+      return jsonRes({ ok: true });
+    }
 
     return jsonRes({ error: 'Route inconnue' }, 404);
   } catch (err) {
@@ -611,26 +654,48 @@ function HTML() {
 <title>FiltresDNS</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
 <style>
-:root{
-  --bg:#f4f6fa;
-  --surface:#ffffff;
-  --surface-2:#f8fafc;
-  --primary:#6366f1;
-  --primary-d:#4f46e5;
-  --primary-light:#eef2ff;
-  --success:#10b981;
-  --success-light:#d1fae5;
-  --danger:#ef4444;
-  --danger-light:#fee2e2;
-  --warning:#f59e0b;
-  --warning-light:#ffedd5;
-  --text:#0f172a;
-  --text-2:#475569;
-  --text-3:#94a3b8;
-  --border:#e2e8f0;
-  --shadow:0 1px 3px rgba(0,0,0,0.05),0 4px 12px rgba(0,0,0,0.04);
-  --radius:16px;
-  --radius-sm:10px;
+/* Thème sombre (par défaut) */
+:root {
+  --bg: #0f0f1a;
+  --surface: #1e1e2a;
+  --surface-2: #2a2a36;
+  --primary: #818cf8;
+  --primary-d: #6366f1;
+  --primary-light: #2e2a5e;
+  --success: #34d399;
+  --success-light: #1e3a2f;
+  --danger: #f87171;
+  --danger-light: #3b1e1e;
+  --warning: #fbbf24;
+  --warning-light: #4a3a1a;
+  --text: #e2e8f0;
+  --text-2: #94a3b8;
+  --text-3: #64748b;
+  --border: #334155;
+  --shadow: 0 1px 3px rgba(0,0,0,0.3),0 4px 12px rgba(0,0,0,0.2);
+  --radius: 16px;
+  --radius-sm: 10px;
+}
+
+/* Thème clair */
+body.light {
+  --bg: #f4f6fa;
+  --surface: #ffffff;
+  --surface-2: #f8fafc;
+  --primary: #6366f1;
+  --primary-d: #4f46e5;
+  --primary-light: #eef2ff;
+  --success: #10b981;
+  --success-light: #d1fae5;
+  --danger: #ef4444;
+  --danger-light: #fee2e2;
+  --warning: #f59e0b;
+  --warning-light: #ffedd5;
+  --text: #0f172a;
+  --text-2: #475569;
+  --text-3: #94a3b8;
+  --border: #e2e8f0;
+  --shadow: 0 1px 3px rgba(0,0,0,0.05),0 4px 12px rgba(0,0,0,0.04);
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 body{
@@ -809,6 +874,19 @@ input::placeholder{color:var(--text-3)}
   </div>
 </div>
 
+<!-- Modal récupération PIN -->
+<div class="modal-bg" id="forgotPinModal">
+  <div class="modal" style="max-width:360px">
+    <h3>🔐 Récupération du code PIN</h3>
+    <p>Indique ton prénom et un moyen de te contacter (email ou téléphone). L’admin te répondra.</p>
+    <input type="text" id="forgotName" placeholder="Ton prénom" autocomplete="off">
+    <input type="text" id="forgotContact" placeholder="Email ou numéro de téléphone" autocomplete="off">
+    <div class="modal-btns">
+      <button class="btn btn-2" onclick="closeForgotPinModal()">Annuler</button>
+      <button class="btn" onclick="sendForgotPinEmail()">Envoyer la demande</button>
+    </div>
+  </div>
+</div>
 <div class="toast" id="toast"></div>
 
 <script>
@@ -840,6 +918,9 @@ function render(){
     case'parrain_dashboard':app.innerHTML=parrainDashScreen();break;
     case'parrain_detail':app.innerHTML=parrainDetailScreen();break;
   }
+  // Sync dark mode toggle with current theme
+  const dmt = document.getElementById('darkModeToggle');
+  if (dmt) dmt.checked = !document.body.classList.contains('light');
 }
 
 function homeScreen(){
@@ -860,7 +941,7 @@ function homeScreen(){
     <input type="text" id="loginId" placeholder="Identifiant (ex: paul)">
     <input type="password" id="loginPin" placeholder="Code secret">
     <button class="btn btn-2" onclick="loginUser()">Se connecter</button>
-    <div class="hint mt"><a href="mailto:simon.deboeuf.1@gmail.com?subject=PIN%20Filleul%20perdu%20-%20FiltreDNS&body=Bonjour%2C%0A%0AJ%27ai%20perdu%20mon%20code%20secret%20filleul.%0A%0AMon%20identifiant%20%3A%20%0A%0AMerci%20de%20m%27aider%20%C3%A0%20le%20r%C3%A9cup%C3%A9rer." style="color:var(--warning);text-decoration:underline;font-weight:500;cursor:pointer">PIN oublié ? Me contacter</a></div>
+    <div class="hint mt"><button class="btn-ghost" style="color:var(--warning);text-decoration:underline;font-    weight:500;background:transparent;border:none;cursor:pointer" onclick="showForgotPinModal('filleul')">PIN oublié ? Me contacter</button></div> 
   </div>
   <div class="hint" style="margin-top:1rem;padding:0 1rem">\u{1F4AC} Des idées, un bug ou autres choses, n\u2019hésites pas à m\u2019en faire part :)</div>
   \`;
@@ -944,6 +1025,19 @@ function profileScreen(){
     <div class="hint" style="text-align:left">Le site sera bloqué immédiatement pour tous les utilisateurs.</div>
   </div>
   <button class="btn btn-2 mt" onclick="changeUserPin()">\u{1F511} Changer mon code secret</button>
+<div class="card">
+  <div class="card-title">\u{1F308} Apparence</div>
+  <div class="row">
+    <div class="row-body">
+      <div class="row-title">Mode sombre</div>
+      <div class="row-sub">Interface plus reposante la nuit</div>
+    </div>
+    <label class="tg">
+      <input type="checkbox" id="darkModeToggle" onchange="toggleDarkMode(this.checked)">
+      <span class="tg-s"></span>
+    </label>
+  </div>
+</div>
   <div class="setup">
     <h3>\u{1F4F1} Installation (30 secondes)</h3>
     <ol>
@@ -965,7 +1059,7 @@ function parrainLoginScreen(){
     <button class="btn" onclick="parrainLogin()" style="margin-bottom:8px">Accéder</button>
     <div class="or">ou</div>
     <button class="btn btn-2" onclick="go('parrain_invite')">J\u2019ai un code d\u2019invitation</button>
-    <div class="hint mt"><a href="mailto:simon.deboeuf.1@gmail.com?subject=PIN%20Parrain%20perdu%20-%20FiltreDNS&body=Bonjour%2C%0A%0AJ%27ai%20perdu%20mon%20code%20secret%20parrain.%0A%0AMon%20pr%C3%A9nom%20parrain%20%3A%20%0AMon%20filleul%20%3A%20%0A%0AMerci%20de%20m%27aider%20%C3%A0%20le%20r%C3%A9cup%C3%A9rer." style="color:var(--warning);text-decoration:underline;font-weight:500;cursor:pointer">PIN oublié ? Me contacter</a></div>
+    <div class="hint mt"><button class="btn-ghost" style="color:var(--warning);text-decoration:underline;font-weight:500;background:transparent;border:none;cursor:pointer" onclick="showForgotPinModal('parrain')">PIN oublié ? Me contacter</button></div>
   </div>
   \`;
 }
@@ -1052,6 +1146,16 @@ const CAT_LABELS=${JSON.stringify(CAT_LABELS)};
 function go(screen){state.screen=screen;render();if(screen==='parrain_dashboard')setTimeout(loadPending,100)}
 
 function logout(){state.user=null;localStorage.removeItem('fdns_id');localStorage.removeItem('fdns_pin');go('home')}
+
+function toggleDarkMode(enabled) {
+  if (enabled) {
+    document.body.classList.add('light');
+    localStorage.setItem('filtredns_theme', 'light');
+  } else {
+    document.body.classList.remove('light');
+    localStorage.setItem('filtredns_theme', 'dark');
+  }
+}
 
 async function registerUser(){
   const name=$('regName')?.value?.trim();
@@ -1188,6 +1292,43 @@ async function suggestSite(){
     urlInput.value='';catSelect.value='';
     if(otherInput){otherInput.value='';otherInput.style.display='none';}
   }catch(e){hideLoader();toast('Erreur : '+e.message,'error');}
+}
+
+// ── Forgot PIN modal ───────────────────────────────────────
+let forgotPinType = 'filleul';
+
+function showForgotPinModal(type) {
+  forgotPinType = type;
+  document.getElementById('forgotPinModal').classList.add('show');
+  document.getElementById('forgotName').value = '';
+  document.getElementById('forgotContact').value = '';
+}
+
+function closeForgotPinModal() {
+  document.getElementById('forgotPinModal').classList.remove('show');
+}
+
+async function sendForgotPinEmail() {
+  const name = document.getElementById('forgotName').value.trim();
+  const contact = document.getElementById('forgotContact').value.trim();
+  if (!name) { toast('Indique ton prénom', 'error'); return; }
+  if (!contact) { toast('Indique un email ou un téléphone', 'error'); return; }
+  showLoader();
+  try {
+    const res = await fetch(API + '/forgot-pin', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type: forgotPinType, name, contact })
+    });
+    const data = await res.json();
+    hideLoader();
+    if (data.error) { toast(data.error, 'error'); return; }
+    closeForgotPinModal();
+    toast('Demande envoyée ! L’admin te répondra.', 'success');
+  } catch (e) {
+    hideLoader();
+    toast('Erreur : ' + e.message, 'error');
+  }
 }
 
 document.addEventListener('change',function(e){
@@ -1363,6 +1504,16 @@ document.addEventListener('keydown',function(e){
   if(id==='confirmPin')confirmAction();
   if(id==='suggestUrl')suggestSite();
 });
+// Restaurer le thème sauvegardé
+const savedTheme = localStorage.getItem('filtredns_theme');
+if (savedTheme === 'light') {
+  document.body.classList.add('light');
+  const toggle = document.getElementById('darkModeToggle');
+  if (toggle) toggle.checked = true;
+} else {
+  document.body.classList.remove('light');
+}
+
 </script>
 </body>
 </html>`;
