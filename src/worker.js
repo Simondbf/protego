@@ -1149,11 +1149,13 @@ function logout(){state.user=null;localStorage.removeItem('fdns_id');localStorag
 
 function toggleDarkMode(enabled) {
   if (enabled) {
-    document.body.classList.add('light');
-    localStorage.setItem('filtredns_theme', 'light');
-  } else {
+    // Mode sombre activé → enlever la classe light
     document.body.classList.remove('light');
     localStorage.setItem('filtredns_theme', 'dark');
+  } else {
+    // Mode clair activé → ajouter la classe light
+    document.body.classList.add('light');
+    localStorage.setItem('filtredns_theme', 'light');
   }
 }
 
@@ -1508,11 +1510,12 @@ document.addEventListener('keydown',function(e){
 const savedTheme = localStorage.getItem('filtredns_theme');
 if (savedTheme === 'light') {
   document.body.classList.add('light');
-  const toggle = document.getElementById('darkModeToggle');
-  if (toggle) toggle.checked = true;
 } else {
   document.body.classList.remove('light');
 }
+// Mettre à jour l’état du toggle si présent
+const toggle = document.getElementById('darkModeToggle');
+if (toggle) toggle.checked = !document.body.classList.contains('light');
 
 </script>
 </body>
