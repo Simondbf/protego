@@ -1,98 +1,41 @@
-# FiltresDNS — Interface self-service
+# Protego
 
-Interface web parrain/filleul pour la gestion des catégories DNS.
+Serveur DNS filtrant personnel, joignable en DNS chiffré (DNS-over-TLS) à l'adresse `dns.soleiljaune.be`.
+Il tourne sur le VPS Hetzner avec [Technitium DNS Server](https://technitium.com/dns/).
 
-## Stack
+## Les listes
 
-- **Frontend** : HTML/CSS/JS vanilla (embarqué dans le Worker)
-- **Backend** : Cloudflare Worker
-- **Base de données** : Cloudflare D1 (SQLite, Europe de l'Ouest)
-- **DNS** : AdGuard Home sur Oracle Cloud (89.168.40.235)
+| Fichier | Rôle |
+|---|---|
+| `liste-blocage.txt` | Domaines bloqués (un par ligne ; sous-domaines compris) |
+| `liste-exceptions.txt` | Domaines toujours autorisés, même si une liste les bloque |
 
-## Fonctionnement
+Technitium relit ces deux fichiers sur GitHub toutes les 2 heures : il suffit de les modifier ici.
+S'y ajoute la liste publique [HaGeZi NSFW](https://github.com/hagezi/dns-blocklists), elle aussi mise à jour automatiquement.
 
-### Filleul
-1. Ouvre `filtredns.rpisimon.uk`
-2. Crée son profil (prénom)
-3. Reçoit son hostname DNS (`prenom.dns.rpisimon.uk`)
-4. Choisit ses catégories optionnelles (sens unique : peut bloquer, ne peut pas débloquer)
-5. Envoie son code d'invitation à son parrain
+SafeSearch forcé : Google, Bing, DuckDuckGo. YouTube n'est pas restreint.
 
-### Parrain
-1. Reçoit le code d'invitation du filleul
-2. S'inscrit avec le code + son prénom + un code secret
-3. Accède au dashboard parrain : voit ses filleuls, leurs stats, leurs catégories
-4. Peut activer ET désactiver les catégories optionnelles (avec confirmation + code secret)
-5. Peut changer son code secret à tout moment
+## Fichiers du serveur (`dns/`)
 
-### DNS de base (sans profil)
-Utiliser `dns.rpisimon.uk` directement → toutes les catégories bloquées, pas de personnalisation.
+| Fichier | Rôle |
+|---|---|
+| `docker-compose.yml` | Conteneur Technitium : port 853 public, console web sur `127.0.0.1:5380` |
+| `nginx.conf` | Site nginx de `dns.soleiljaune.be`, uniquement pour la validation Let's Encrypt |
+| `certificat.sh` | Crochet certbot : convertit le certificat en `.pfx` pour Technitium |
+| `configurer.sh` | Configure Technitium par son API (DoT, listes, SafeSearch) ; se relance sans risque |
+| `verifier.sh` | Vérifie filtrage, exceptions, SafeSearch et DNS chiffré |
 
-## Déploiement
+Les secrets (`dns/.env`) et les données de Technitium (`dns/config/`) restent sur le serveur, hors de Git.
 
-### 1. Créer la base D1
+## Console web
 
-```bash
-npx wrangler d1 create filtredns-db --location=weur
-```
+Depuis le PC : `ssh -L 5380:127.0.0.1:5380 root@178.105.235.106`, puis ouvrir http://localhost:5380.
+Identifiant `admin`, mot de passe : `grep TECHNITIUM_ADMIN /root/protego/dns/.env` sur le serveur.
 
-Copier le `database_id` affiché dans `wrangler.toml`.
+## Téléphone Android
 
-### 2. Initialiser le schéma
+Paramètres → DNS privé → Nom d'hôte du fournisseur : `dns.soleiljaune.be`
 
-```bash
-npx wrangler d1 execute filtredns-db --file=schema.sql
-```
+## Ancienne version
 
-### 3. Configurer les secrets
-
-```bash
-npx wrangler secret put ADGUARD_URL
-# → http://89.168.40.235:3000
-
-npx wrangler secret put ADGUARD_USER
-# → ton login admin AdGuard
-
-npx wrangler secret put ADGUARD_PASS
-# → ton mot de passe admin AdGuard
-```
-
-### 4. Déployer
-
-```bash
-npx wrangler deploy
-```
-
-### 5. DNS Cloudflare
-
-Ajouter dans rpisimon.uk → DNS → Records :
-
-| Type  | Nom        | Contenu                              | Proxy |
-|-------|------------|--------------------------------------|-------|
-| CNAME | `filtredns` | `filtredns.TONCOMPTE.workers.dev`   | ✅ ON  |
-
-(Le nom exact du workers.dev s'affiche après `wrangler deploy`)
-
-## Sécurité
-
-- Les codes secrets des parrains sont hashés (SHA-256 + salt) en base
-- Seuls les parrains associés peuvent voir/modifier les catégories de leurs filleuls
-- Les filleuls ne peuvent que bloquer (sens unique), jamais débloquer
-- Le parrain doit entrer son code secret pour chaque modification de catégorie
-- Aucun accès à l'interface admin AdGuard Home pour les utilisateurs
-
-## Catégories
-
-### Obligatoires (non modifiables)
-- Contenus pour adultes (157 domaines)
-- Webcams adultes (37 domaines)
-- Hentai / Comics adultes (55 domaines)
-- IA suggestive / NSFW (26 domaines)
-- Tor / Anonymisation (9 domaines)
-
-### Optionnelles (modifiables)
-- Manga / Webtoon / Scantrad (184 domaines)
-- Jeux d'argent / Paris sportifs (46 domaines)
-- Moteurs de recherche alternatifs (49 domaines)
-- IA mixtes (20 domaines)
-- SafeSearch YouTube (via API client AdGuard)
+`src/`, `schema.sql`, `wrangler.toml` et `GUIDE_DEPLOIEMENT.md` sont l'ancienne interface Cloudflare Worker (AdGuard Home sur Oracle Cloud, domaine rpisimon.uk). Ils seront supprimés une fois Cloudflare abandonné.

@@ -1,0 +1,5 @@
+apis.naver.com
+jtvnw.net
+ttvnw.net
+twitch.tv
+webtoons.com

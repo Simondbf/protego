@@ -5,3 +5,5 @@ nodejs/
 rpi-electron/dist/
 rpi-electron/node_modules/
 rpi-electron/pc-agent/node_modules/
+dns/.env
+dns/config/

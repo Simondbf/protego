@@ -1,0 +1,20 @@
+# Protego : serveur DNS filtrant (Technitium) joignable en DNS chiffré sur dns.soleiljaune.be
+# Lancement : cd /root/protego/dns && docker compose up -d
+services:
+  technitium:
+    image: technitium/dns-server:latest
+    container_name: technitium
+    hostname: technitium
+    restart: unless-stopped
+    ports:
+      - "853:853/tcp"               # DNS chiffré (DoT) : le seul port ouvert sur Internet
+      - "127.0.0.1:5380:5380/tcp"   # console web : joignable uniquement depuis le serveur (tunnel SSH)
+    environment:
+      - DNS_SERVER_DOMAIN=dns.soleiljaune.be
+      - DNS_SERVER_ADMIN_PASSWORD=${TECHNITIUM_ADMIN}
+      - DNS_SERVER_RECURSION=Allow
+      - DNS_SERVER_LOG_USING_LOCAL_TIME=true
+    volumes:
+      - ./config:/etc/dns
+    sysctls:
+      - net.ipv4.ip_local_port_range=1024 65535
