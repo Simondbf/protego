@@ -1,5 +1,11 @@
 apis.naver.com
+ext-twitch.tv
 jtvnw.net
+live-video.net
+pstatic.net
 ttvnw.net
 twitch.tv
+twitchcdn.net
+twitchsvc.net
+webtoon.com
 webtoons.com
